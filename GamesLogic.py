@@ -46,7 +46,7 @@ class Fight(object):
             print("\n" + "-" * 10)
             your_attack = random.randint(4, 12)
 
-            def oooo(character1, character2, mainAttack=your_attack):
+            def playerFightsCharacters(character1, character2, mainAttack=your_attack):
                 attack = input(f"Натисніть 1, щоб атакувати {self.character1.name}, 2, щоб атакувати {self.character2.name} >")
                 if attack == "1":
                     if character1.alive:
@@ -69,9 +69,9 @@ class Fight(object):
                 else:
                     print("Проґавив.")
 
-            oooo(self.character1, self.character2)
+            playerFightsCharacters(self.character1, self.character2)
 
-            def characterFight(character):
+            def characterFightsPlayer(character):
                 if character.alive:
                     with_armor = armor_calculated(character, self.player)  # Pass self.player as an argument
                     self.player.health -= with_armor  # Update the player's health
@@ -82,8 +82,8 @@ class Fight(object):
                 if self.player.health <= 0:
                     print("Ви померли.")
 
-            characterFight(self.character1)
-            characterFight(self.character2)
+            characterFightsPlayer(self.character1)
+            characterFightsPlayer(self.character2)
 
 # Створення персонажiв
 character1 = Character("Персонаж 1")
