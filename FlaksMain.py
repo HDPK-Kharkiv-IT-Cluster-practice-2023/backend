@@ -1,48 +1,39 @@
 from flask import Flask, render_template, request, redirect, url_for
-from characterCreation import Character
+from characterCreation import Character, character1, character2, Player, Playeryou
 
 
 app = Flask(__name__, template_folder="teamplates")
 
 
-class Character:
-    def __init__(self):
-        self.health = 100  # Здоровье от 0 до 100
-        self.attack = 0  # Урон от 0 до 20
-
-    def take_damage(self, damage):
-        self.health -= damage
-
-    def reset_attack(self):
-        import random
-        self.attack = random.randint(1, 20)
-
-character1 = Character()
-character2 = Character()
-
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        character1.take_damage(character2.attack)
-        character2.take_damage(character1.attack)
-        character1.reset_attack()
-        character2.reset_attack()
-        
+        if 'c1damage' in request.form:
+            if request.form['c1damage'] == 'damage':
+                character1.take_damage(Playeryou.yourattack)
+                Playeryou.take_damage(character1.attack)
+                Playeryou.take_damage(character2.attack)
+                character1.reset_attack()
+                character2.reset_attack()
+                Playeryou.reset_attackyour()
 
-        if character1.health <= 0 or character2.health <= 0:
-            print("Персонаж 1" if character1.health > character2.health else "Персонаж 2")
-            winner = "Персонаж 1" if character1.health > character2.health else "Персонаж 2"
-            return render_template('winner.html', winner=winner)
+        elif 'c2damage' in request.form:
+            if request.form['c2damage'] == 'damage2':
+                character2.take_damage(Playeryou.yourattack)
+                Playeryou.take_damage(character1.attack)
+                Playeryou.take_damage(character2.attack)
+                character1.reset_attack()
+                character2.reset_attack()
+                Playeryou.reset_attackyour()
 
+        if character1.health <= 0:
+            character1.alive = False
+        if character2.health <= 0:
+            character1.alive = False
+        if Playeryou.health <= 0:
+            return render_template('winner.html')
 
-    return render_template('index.html', character1=character1, character2=character2)
-def get_winner():
-    if character1.health <= 0 and character2.health <= 0:
-        return "Ничья"
-    elif character1.health <= 0:
-        return "Персонаж 2"
-    elif character2.health <= 0:
-        return "Персонаж 1"
+    return render_template('index.html', character1=character1, character2=character2, Playeryou=Playeryou)
 
 
 if __name__ == "__main__":

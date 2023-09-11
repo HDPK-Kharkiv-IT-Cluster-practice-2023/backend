@@ -6,16 +6,40 @@
 </head>
 <body>
     <h1>Игра: Ударить</h1>
-    <h2>Персонаж 1</h2>
+    <h2>{{ character1.name }}</h2>
     <p>Здоровье: {{ character1.health }}</p>
     <p>Атака: {{ character1.attack }}</p>
+    <p>Броня: {{ character1.armor }}</p>
+    <p>Живый: {{ character1.alive }} </p>
+
+    
+
+
     <form action="/" method="post">
-        <input type="submit" value="Ударить">
+        <input type="submit" name="c2damage" value="damage2">
     </form>
 
-    <h2>Персонаж 2</h2>
+
+    <form action="/" method="post">
+        <input type="submit" name="c1damage" value="damage">
+    </form>
+
+
+    <h2>Игрок</h2>
+    <p>Здоровье: {{ Playeryou.health }}</p>
+    <p>Атака: {{ Playeryou.yourattack }}</p>
+    <p>Броня: {{ Playeryou.yourarmor }}</p>
+    
+
+
+
+
+    <h2>{{ character2.name }}</h2>
     <p>Здоровье: {{ character2.health }}</p>
     <p>Атака: {{ character2.attack }}</p>
+    <p>Броня: {{ character2.armor }}</p>
+    <p>Живый: {{ character2.alive }} </p>
+    
 
 </body>
 </html>
