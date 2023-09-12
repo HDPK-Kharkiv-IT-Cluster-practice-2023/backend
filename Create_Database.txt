@@ -1,0 +1,11 @@
+CREATE DATABASE CharactersDB;
+
+CREATE TABLE characters (id SERIAL PRIMARY KEY, name VARCHAR(255), critical_attack INT, health INT, armor INT, attack INT, luck INT);
+
+CREATE TABLE mob_types ( mob_id serial PRIMARY KEY, mob_name VARCHAR(255) NOT NULL, health INT, armor INT, attack INT, luck INT);
+
+INSERT INTO characters (name) VALUES ('Characters 1'), ('Characters 2'); 
+
+INSERT INTO mob_types (mob_name) VALUES ('Zombie'), ('Skeleton'),('Spider'), ('Slime'), ('Goblin'); 
+
+
