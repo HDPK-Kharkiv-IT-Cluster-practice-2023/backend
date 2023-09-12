@@ -1,5 +1,7 @@
-import psycopg2
 import random
+
+import psycopg2
+
 
 class Character:
     def __init__(self, name):
@@ -23,7 +25,8 @@ class Character:
         cursor = connection.cursor()
 
         cursor.execute(
-            "INSERT INTO characters (name, critical_attack, health, armor, attack, luck) VALUES (%s, %s, %s, %s, %s, %s)",
+            "INSERT INTO characters (name, critical_attack, health, armor, attack, luck)"
+            " VALUES (%s, %s, %s, %s, %s, %s)",
             (self.name, self.critical_attack, self.health, self.armor, self.attack, self.luck)
         )
         connection.commit()
@@ -42,7 +45,8 @@ class Character:
         cursor = connection.cursor()
 
         cursor.execute(
-            "UPDATE characters SET critical_attack = %s, health = %s, armor = %s, attack = %s, luck = %s WHERE name = %s",
+            "UPDATE characters SET critical_attack = %s, health = %s, armor = %s,"
+            " attack = %s, luck = %s WHERE name = %s",
             (self.critical_attack, self.health, self.armor, self.attack, self.luck, self.name)
         )
         connection.commit()
@@ -51,7 +55,9 @@ class Character:
         connection.close()
 
     def __str__(self):
-        return f"{self.name}: критическая атака {self.critical_attack}, здоровье {self.health}, броня {self.armor}, атака {self.attack}, удача {self.luck}"
+        return f"{self.name}: критическая атака {self.critical_attack}, здоровье {self.health}," \
+               f" броня {self.armor}, атака {self.attack}, удача {self.luck}"
+
 
 def generate_characters(num_characters):
     character_list = []
@@ -60,6 +66,7 @@ def generate_characters(num_characters):
         name = random.choice(character_names)
         character_list.append(Character(name))
     return character_list
+
 
 characters = generate_characters(2)
 for character in characters:
