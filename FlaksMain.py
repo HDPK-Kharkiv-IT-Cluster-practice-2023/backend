@@ -6,9 +6,11 @@ from Mob_Generation_fix import *
 
 app = Flask(__name__, template_folder="templates")
 
+
 @app.route('/', methods=['GET', 'POST'])
 def start():
     return render_template('start.html')
+
 
 @app.route('/fight_mob', methods=['GET', 'POST'])
 def fight_mob():
@@ -25,6 +27,7 @@ def fight_mob():
 
     return render_template('fight_mob.html', character=character1, mob=mob1)
 
+
 @app.route('/fight_character', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
@@ -36,15 +39,13 @@ def index():
                 character2.reset_attack()
                 character1.reset_luck()
                 character2.reset_luck()
-                
-                
 
         if character1.health <= 0:
             character1.alive = False
-            return render_template('winner.html' , character=character2)
+            return render_template('winner.html', character=character2)
         if character2.health <= 0:
             character1.alive = False
-            return render_template('winner.html' , character=character1)
+            return render_template('winner.html', character=character1)
 
     return render_template('fight_character.html', character1=character1, character2=character2,)
 

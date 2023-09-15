@@ -1,6 +1,7 @@
 import random
 from faker import Faker
 
+
 class Character:
     def __init__(self):
         fake = Faker()
