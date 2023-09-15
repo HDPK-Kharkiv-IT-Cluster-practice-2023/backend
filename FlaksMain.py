@@ -15,12 +15,17 @@ def start():
 @app.route('/fight_mob', methods=['GET', 'POST'])
 def fight_mob():
     if mob1.health <= 0:
+        character1.xp += mob1.xp
         character1.balance += 25
         mob1.__init__()
     mob1.take_damage(character1.critical_attack)
     character1.take_damage(mob1.critical_attack)
     character1.reset_attack()
     character1.reset_luck()
+
+    if character1.xp >= 100:
+        character1.level += 1
+        character1.xp -= 100
 
     if character1.health <= 0:
         return render_template('game_over.html')

@@ -6,6 +6,8 @@ class Character:
     def __init__(self):
         fake = Faker()
         self.name = fake.name()
+        self.level = 1
+        self.xp = 0
         self.health = random.randint(70, 100)
         self.armor = random.randint(1, 10)
         self.attack = random.randint(5, 20)
@@ -23,7 +25,7 @@ class Character:
         self.critical_attack = self.attack * 2 if self.luck > 5 else self.attack
 
     def reset_attack(self):
-        self.attack = random.randint(1, 20)
+        self.attack = random.randint(1, 20 * (self.level * 0.5))
 
     def __str__(self):
         return (f"{self.name}: критическая атака {self.critical_attack}, здоровье {self.health}, броня {self.armor}, "
