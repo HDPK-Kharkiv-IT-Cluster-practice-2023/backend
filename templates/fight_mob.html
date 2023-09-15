@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>битва с мобом</h1>
+    <h2>{{ character.name }}</h2>
+    <p>Здоровье: {{ character.health }}</p>
+    <p>Атака: {{ character.attack }}</p>
+    <p>Критическая Атака: {{ character.critical_attack }}</p>
+    <p>Броня: {{ character.armor }}</p>
+    <p>Живый: {{ character.alive }} </p>
+    <p>Удача: {{ character.luck }}</p>
+    <p>Баланс: {{ character.balance }}</p>
+
+    <form action="/fight_mob" method="post">
+        <input type="submit" name="mob" value="Ударить">
+    </form>
+
+
+    <h2>{{ mob.name }}</h2>
+    <p>Здоровье: {{ mob.health }}</p>
+    <p>Атака: {{ mob.attack }}</p>
+    <p>Критическая Атака: {{ mob.critical_attack }}</p>
+    <p>Броня: {{ mob.armor }}</p>
+    <p>Живый: {{ mob.alive }} </p>
+    <p>Удача: {{ mob.luck }}</p>
+
+
+
+
+
+</body>
+</html>
