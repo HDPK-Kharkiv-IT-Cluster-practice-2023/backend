@@ -1,5 +1,3 @@
-from random import randint, choice, shuffle
-
 character_template = {
     'Health': 0,
     'Attack': 0,
@@ -56,7 +54,7 @@ shuffle(marketing_goods)
 def market(p):
     p_stats = p.get('Stats').copy()
     print(p)
-    priority = min(p_stats, key=p_stats.get)
+    priority = min(p_stats, key = p_stats.get)
 
     for id, good in enumerate(marketing_goods):
         if good.get(priority) and good.get('Price') <= p.get('Money'):
