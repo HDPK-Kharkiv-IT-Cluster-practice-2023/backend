@@ -1,5 +1,6 @@
-import random
 from characterCreation import *
+
+import random
 
 
 class Mob:

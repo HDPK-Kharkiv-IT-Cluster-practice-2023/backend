@@ -1,8 +1,8 @@
 from flask import Flask, render_template, request
 
-from characterCreation import character1, character2
-
 from Mob_Generation_fix import *
+
+from characterCreation import character1, character2
 
 app = Flask(__name__, template_folder="templates")
 

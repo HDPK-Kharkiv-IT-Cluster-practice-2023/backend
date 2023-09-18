@@ -1,4 +1,5 @@
 import random
+
 from faker import Faker
 
 
@@ -25,7 +26,7 @@ class Character:
         self.critical_attack = self.attack * 2 if self.luck > 5 else self.attack
 
     def reset_attack(self):
-        self.attack = random.randint(1, 20 * (self.level * 0.5))
+        self.attack = random.randint(1, 20 * self.level)
 
     def __str__(self):
         return (f"{self.name}: критическая атака {self.critical_attack}, здоровье {self.health}, броня {self.armor}, "
