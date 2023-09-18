@@ -1,3 +1,5 @@
+from random import shuffle
+
 character_template = {
     'Health': 0,
     'Attack': 0,
@@ -49,6 +51,7 @@ sportpit = {
 
 marketing_goods = [knife, sword, shield, helmet, blessing, sportpit]
 shuffle(marketing_goods)
+
 
 
 def market(p):
