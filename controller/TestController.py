@@ -13,8 +13,11 @@ def members():
 
 @app.route('/', methods=['POST'])
 def submit():
-    name = request.form.get('name')
-    return print(f'Привет, {name}! Форма отправлена.')
+    data = request.json
+    print(data)
+
+    response_data = {"message": "Данные успешно обработаны"}
+    return jsonify(response_data)
 
 
 if __name__ == '__main__':
