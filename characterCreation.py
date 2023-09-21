@@ -6,6 +6,7 @@ from faker import Faker
 class Character:
     def __init__(self):
         fake = Faker()
+
         self.name = fake.name()
         self.level = 1
         self.xp = 0
@@ -19,7 +20,11 @@ class Character:
 
     def take_damage(self, damage):
         actual_damage = max(damage - self.armor, 0)
-        self.health -= actual_damage
+        if actual_damage >= self.health:
+            self.health = 0
+            self.alive = False
+        else:
+            self.health -= actual_damage
 
     def reset_luck(self):
         self.luck = random.randint(1, 10)
@@ -33,5 +38,5 @@ class Character:
                 f"атака {self.attack}, удача {self.luck}")
 
 
-character1 = Character()
-character2 = Character()
+# character1 = CharacterRepository()
+# character2 = CharacterRepository()

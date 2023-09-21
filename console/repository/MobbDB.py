@@ -17,9 +17,9 @@ class Mob:
     def create_in_database(self):
         connection = psycopg2.connect(
             host="localhost",
-            database="characters_and_mobs",
+            database="charactersdb",
             user="postgres",
-            password="971482"
+            password="admin"
         )
         cursor = connection.cursor()
 
@@ -36,9 +36,9 @@ class Mob:
         # Обновить характеристики моба в базе данных
         connection = psycopg2.connect(
             host="localhost",
-            database="characters_and_mobs",
+            database="charactersdb",
             user="postgres",
-            password="971482"
+            password="admin"
         )
         cursor = connection.cursor()
 

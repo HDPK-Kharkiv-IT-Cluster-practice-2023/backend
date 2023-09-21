@@ -4,9 +4,9 @@ import random
 
 
 class Mob:
-    def __init__(self):
+    def __init__(self, character):
         mob_names = ["Zombie", "Skeleton", "Spider", "Slime", "Goblin"]
-        self.level = random.randint(1, character1.level)
+        self.level = random.randint(1, character.level)
         self.xp = random.randint(25, 75)
         self.name = random.choice(mob_names)
         self.health = random.randint(20, 50)
@@ -27,5 +27,5 @@ class Mob:
                f"атака {self.attack}, удача {self.luck}"
 
 
-mob1 = Mob()
-print(mob1)
+# mob1 = Mob()
+# print(mob1)

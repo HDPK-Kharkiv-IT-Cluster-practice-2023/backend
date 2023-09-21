@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -16,7 +16,7 @@ def submit():
     data = request.json
     print(data)
 
-    response_data = {"message": "Данные успешно обработаны"}
+    response_data = {"message": "Data successfully processed"}
     return jsonify(response_data)
 
 
