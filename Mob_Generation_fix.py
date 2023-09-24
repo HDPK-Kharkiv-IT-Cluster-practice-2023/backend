@@ -1,5 +1,3 @@
-from characterCreation import *
-
 import random
 
 

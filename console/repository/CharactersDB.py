@@ -1,75 +1,102 @@
 import psycopg2
+from psycopg2 import extras
 
 
 class CharacterRepository:
-    def __init__(self, character):
-        self.character = character
+    def __init__(self):
         self.connection_creds = {
             'host': 'localhost',
             'database': 'charactersdb',
             'user': 'postgres',
             'password': 'admin'
         }
-        # Создать персонажа в базе данных
-        self.create_in_database()
 
-    def create_in_database(self):
-        connection = psycopg2.connect(
+    def _create_connection(self):
+        return psycopg2.connect(
             host=self.connection_creds.get('host'),
             database=self.connection_creds.get('database'),
             user=self.connection_creds.get('user'),
             password=self.connection_creds.get('password')
         )
+
+    def _create_in_database(self, character):
+        connection = self._create_connection()
         cursor = connection.cursor()
         cursor.execute(
-            "INSERT INTO characters (name, critical_attack, health, armor, attack, luck)"
-            " VALUES (%s, %s, %s, %s, %s, %s)",
-            (self.character.name, self.character.critical_attack, self.character.health, self.character.armor,
-             self.character.attack, self.character.luck)
+            "INSERT INTO characters (name, level, xp, max_health, health, armor, attack, luck, balance, alive, "
+            "critical_attack, playability)"
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            (character.name, character.level, character.xp, character.max_health, character.health, character.armor,
+             character.attack, character.luck, character.balance, character.alive, character.critical_attack,
+             character.playability)
+        )
+        new_id = cursor.fetchone()[0]
+        connection.commit()
+        cursor.close()
+        connection.close()
+        return new_id
+
+    def _update_stats(self, character):
+        connection = self._create_connection()
+        cursor = connection.cursor()
+        cursor.execute(
+            "UPDATE characters SET name = %s, level = %s, xp = %s, max_health = %s, health = %s , armor = %s, "
+            "attack = %s, luck = %s, balance = %s, alive = %s, critical_attack = %s, playability = %s WHERE id = %s",
+            (character.name, character.level, character.xp, character.max_health, character.health, character.armor,
+             character.attack, character.luck, character.balance, character.alive, character.critical_attack,
+             character.playability, character.id)
         )
         connection.commit()
         cursor.close()
         connection.close()
 
-    def update_stats(self):
-        connection = psycopg2.connect(
-            host=self.connection_creds.get('host'),
-            database=self.connection_creds.get('database'),
-            user=self.connection_creds.get('user'),
-            password=self.connection_creds.get('password')
-        )
+    def add_all(self, characters_list):
+        connection = self._create_connection()
         cursor = connection.cursor()
-        cursor.execute(
-            "UPDATE characters SET critical_attack = %s, health = %s, armor = %s,"
-            " attack = %s, luck = %s WHERE name = %s",
-            (self.character.critical_attack, self.character.health, self.character.armor, self.character.attack,
-             self.character.luck, self.character.name)
-        )
+        for character in characters_list:
+            cursor.execute(
+                "INSERT INTO characters (name, level, xp, max_health, health, armor, attack, luck, balance, alive, "
+                "critical_attack, playability)"
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+                (character.name, character.level, character.xp, character.max_health, character.health, character.armor,
+                 character.attack, character.luck, character.balance, character.alive, character.critical_attack,
+                 character.playability)
+            )
+            new_id = cursor.fetchone()[0]
+            character.id = new_id
         connection.commit()
         cursor.close()
         connection.close()
+
+    def exist_by_id(self, character_id):
+        connection = self._create_connection()
+        cursor = connection.cursor()
+        cursor.execute("SELECT COUNT(*) FROM characters WHERE id = %s", (character_id,))
+        count = cursor.fetchone()[0]
+        cursor.close()
+        connection.close()
+        return count > 0
 
     def find_all(self):
-        connection = psycopg2.connect(
-            host=self.connection_creds.get('host'),
-            database=self.connection_creds.get('database'),
-            user=self.connection_creds.get('user'),
-            password=self.connection_creds.get('password')
-        )
-        cursor = connection.cursor()
+        connection = self._create_connection()
+        cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cursor.execute("SELECT * FROM characters")
         records = cursor.fetchall()
         cursor.close()
         connection.close()
         return records
 
+    def find_all_by_playability_and_alive(self, playability, alive=True):
+        connection = self._create_connection()
+        cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cursor.execute("SELECT * FROM characters WHERE playability = %s AND alive = %s", (playability, alive))
+        records = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        return records
+
     def find_by_id(self, character_id):
-        connection = psycopg2.connect(
-            host=self.connection_creds.get('host'),
-            database=self.connection_creds.get('database'),
-            user=self.connection_creds.get('user'),
-            password=self.connection_creds.get('password')
-        )
+        connection = self._create_connection()
         cursor = connection.cursor()
         cursor.execute("SELECT * FROM characters WHERE id = %s", (character_id,))
         record = cursor.fetchone()
@@ -77,14 +104,25 @@ class CharacterRepository:
         connection.close()
         return record
 
-    def update_character(self, character):
-        self.character = character
-        self.update_stats()
+    def add_character(self, character):
+        if character.id is None:
+            new_id = self._create_in_database(character)
+            character.id = new_id
+            return True
+        else:
+            return False
 
-    def __str__(self):
-        return (f"{self.character.name}: критическая атака {self.character.critical_attack},"
-                f" здоровье {self.character.health}, броня {self.character.armor}, атака {self.character.attack},"
-                f" удача {self.character.luck}")
+    def update_character(self, character):
+        if self.exist_by_id(character.id):
+            self._update_stats(character)
+            return True
+        else:
+            return False
+
+    # def __str__(self):
+    #     return (f"{self.character.name}: критическая атака {self.character.critical_attack},"
+    #             f" здоровье {self.character.health}, броня {self.character.armor}, атака {self.character.attack},"
+    #             f" удача {self.character.luck}")
 
 
 # def generate_characters(num_characters):
