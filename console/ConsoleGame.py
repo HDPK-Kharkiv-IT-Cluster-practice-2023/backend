@@ -8,16 +8,6 @@ from models.HealthBar import HealthBar
 character_repository = CharacterRepository()
 
 
-# def pvp_characters_init():
-#     my_character = Character(playability=True)
-#     enemy_character = Character()
-#     request = {
-#         'my_character': my_character,
-#         'enemy_character': enemy_character
-#     }
-#     return request
-
-
 def generate_hero():
     generated_hero = Character(playability=True)
     character_repository.add_character(generated_hero)
@@ -49,22 +39,21 @@ def generate_character_chooser(characters_list):
 
 
 def map_dictionary_to_character(character):
-    return Character(name=character.get("name"), level=character.get("level"), xp=character.get("xp"),
-                     max_health=character.get("max_health"), health=character.get("health"),
+    return Character(id=character.get('id'), name=character.get("name"), level=character.get("level"),
+                     xp=character.get("xp"), max_health=character.get("max_health"), health=character.get("health"),
                      armor=character.get("armor"), attack=character.get("attack"), luck=character.get("luck"),
                      balance=character.get("balance"), alive=character.get("alive"),
                      critical_attack=character.get("critical_attack"), playability=character.get("playability"))
 
 
-def pvp_init():
+def select_hero():
     heroes_list = character_repository.find_all_by_playability_and_alive(playability=True)
-    hero = None
     if not heroes_list:
         pvp_response = str(input('You don\'t have characters yet, want to create one?\n'
                                  '[1] - Yes\n'
                                  '[2] - No\n\n'))
         if pvp_response == '1':
-            hero = generate_hero()
+            return generate_hero()
         elif pvp_response == '2':
             start_game()
     else:
@@ -74,13 +63,16 @@ def pvp_init():
             try:
                 index = int(pvp_response)
                 hero = heroes_list.pop(index - 1)
-                hero = map_dictionary_to_character(hero)
                 break
             except (ValueError, IndexError):
                 print('Invalid entry, enter a number from the list above')
+        return map_dictionary_to_character(hero)
+
+
+def select_enemy():
     enemies_list = character_repository.find_all_by_playability_and_alive(playability=False)
     if not enemies_list:
-        print('Looks like you don\'t have any enemies, how many do you want to create '
+        print('Looks like you don\'t have any enemies, how many do you want to create? '
               '(write the number)\n')
         while True:
             pvp_response = str(input())
@@ -90,14 +82,10 @@ def pvp_init():
             except ValueError:
                 print('Invalid entry, enter a number from the list above')
         enemies_list = generate_enemies(count)
-        enemy = enemies_list.pop(random.randint(0, len(enemies_list) - 1))
+        return enemies_list.pop(random.randint(0, len(enemies_list) - 1))
     else:
         enemy = enemies_list.pop(random.randint(0, len(enemies_list) - 1))
-        enemy = map_dictionary_to_character(enemy)
-    return {
-        'my_character': hero,
-        'enemy_character': enemy
-    }
+        return map_dictionary_to_character(enemy)
 
 
 def display_pvp_status(first, first_bar, second, second_bar):
@@ -117,50 +105,89 @@ def display_pvp_status(first, first_bar, second, second_bar):
             f'Luck: {second.luck}\n')
 
 
+def apply_power_up(character, character_bar):
+    input_prompt = 'Choose your power up:\n'
+    first_power_up = generate_power_up(character)
+    second_power_up = generate_power_up(character)
+    input_prompt += f'[1] - +{first_power_up[1]} {first_power_up[0]}\n'
+    input_prompt += f'[2] - +{second_power_up[1]} {second_power_up[0]}\n\n'
+    response = str(input(input_prompt))
+    buff = None
+    if response == '1':
+        buff = first_power_up
+    elif response == '2':
+        buff = second_power_up
+    if buff[0] == 'health':
+        character.health += buff[1]
+        character_bar.curr_health = character.health
+    elif buff[0] == 'attack':
+        character.attack += buff[1]
+    elif buff[0] == 'armor':
+        character.armor += buff[1]
+    character_repository.update_character(character)
+
+
+def generate_power_up(character):
+    power_up_variants = ['health', 'attack', 'armor']
+    power_up = random.choice(power_up_variants)
+    if power_up == 'health':
+        health = random.randint(character.max_health // 4, character.max_health // 2)
+        return ['health', health]
+    elif power_up == 'attack':
+        attack = random.randint(1, 5)
+        return ['attack', attack]
+    elif power_up == 'armor':
+        armor = random.randint(1, 5)
+        return ['armor', armor]
+
+
+def pvp_fight(hero, hero_bar, enemy, enemy_bar):
+    while hero.alive and enemy.alive:
+        print(display_pvp_status(hero, hero_bar, enemy, enemy_bar))
+        if hero.dice.roll_dice() < hero.luck:
+            apply_power_up(hero, hero_bar)
+            hero_bar.update_health(hero.health)
+            enemy_bar.update_health(enemy.health)
+            print(display_pvp_status(hero, hero_bar, enemy, enemy_bar))
+        response = str(input('Choose your action:\n'
+                             '[1] - attack\n\n'))
+        if response == '1':
+            enemy.take_damage(hero)
+            hero.take_damage(enemy)
+            character_repository.update_character(hero)
+            character_repository.update_character(enemy)
+            hero_bar.update_health(hero.health)
+            enemy_bar.update_health(enemy.health)
+    print(display_pvp_status(hero, hero_bar, enemy, enemy_bar))
+
+
 def start_game():
     response = str(input('Choose your game mode:\n'
                          '[1] - PVP\n'
                          '[2] - PVE\n\n'))
     if response == '1':
         print('Moving to PVP')
-        characters = pvp_init()
-
-        hero = characters.get('my_character')
-        my_bar = HealthBar(max_health=hero.max_health, curr_health=hero.health)
-
-        enemy = characters.get('enemy_character')
-        enemy_bar = HealthBar(max_health=enemy.max_health, curr_health=enemy.health)
-
-        print(display_pvp_status(hero, my_bar, enemy, enemy_bar))
-        response = str(input('Choose your power up:\n'
-                             '[1] - +15 hp\n'
-                             '[2] - +1 armor\n\n'))
-        if response == '1':
-            hero.health += 15
-            my_bar.update_health(hero.health)
-        elif response == '2':
-            hero.armor += 1
-        character_repository.update_character(hero)
-
-        while hero.alive and enemy.alive:
-            print(display_pvp_status(hero, my_bar, enemy, enemy_bar))
-            response = str(input('Choose your action:\n'
-                                 '[1] - attack\n\n'))
-            if response == '1':
-                enemy.take_damage(hero)
-                hero.take_damage(enemy)
-                character_repository.update_character(hero)
-                character_repository.update_character(enemy)
-                my_bar.update_health(hero.health)
-                enemy_bar.update_health(enemy.health)
-        print(display_pvp_status(hero, my_bar, enemy, enemy_bar))
-        if not enemy.alive:
-            print('You win')
-        else:
-            print('You lose')
-
+        hero = select_hero()
+        start_pvp(hero)
     elif response == '2':
         print('Moving to PVE')
+
+
+def start_pvp(hero):
+    hero_bar = HealthBar(max_health=hero.max_health, curr_health=hero.health)
+    enemy = select_enemy()
+    enemy_bar = HealthBar(max_health=enemy.max_health, curr_health=enemy.health)
+    pvp_fight(hero, hero_bar, enemy, enemy_bar)
+    if not enemy.alive:
+        print('You win')
+        response = str(input('Continue?\n'
+                             '[1] - Yes\n'
+                             '[2] - No\n\n'))
+        if response == '1':
+            start_pvp(hero)
+    else:
+        print('Game over')
+        start_game()
 
 
 if __name__ == "__main__":
