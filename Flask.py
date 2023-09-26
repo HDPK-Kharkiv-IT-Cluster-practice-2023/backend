@@ -42,7 +42,7 @@ def get_mobs():
 @app.route('/create', methods=['POST'])
 @cross_origin(origin='http://localhost:3000', headers=['Content-Type', 'Authorization'])
 def create_mob():
-    # Ваш код для создания нового моба здесь
+    
     new_mob = create_new_mob()
     return jsonify(new_mob.to_dict())
 
