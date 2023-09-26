@@ -89,7 +89,21 @@ class CharacterRepository:
     def find_all_by_playability_and_alive(self, playability, alive=True):
         connection = self._create_connection()
         cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cursor.execute("SELECT * FROM characters WHERE playability = %s AND alive = %s", (playability, alive))
+        cursor.execute("SELECT * FROM characters "
+                       "WHERE playability = %s "
+                       "AND alive = %s ", (playability, alive))
+        records = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        return records
+
+    def find_all_by_playability_and_alive_and_level(self, playability, level, alive=True):
+        connection = self._create_connection()
+        cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cursor.execute("SELECT * FROM characters "
+                       "WHERE level >= 1 AND (level BETWEEN (%s - 1) AND (%s + 1)) "
+                       "AND playability = %s "
+                       "AND alive = %s", (level, level, playability, alive))
         records = cursor.fetchall()
         cursor.close()
         connection.close()
@@ -123,7 +137,6 @@ class CharacterRepository:
     #     return (f"{self.character.name}: критическая атака {self.character.critical_attack},"
     #             f" здоровье {self.character.health}, броня {self.character.armor}, атака {self.character.attack},"
     #             f" удача {self.character.luck}")
-
 
 # def generate_characters(num_characters):
 #     character_list = []

@@ -3,22 +3,22 @@ import random
 
 from console.characterCreation import Character
 from console.repository.CharactersDB import CharacterRepository
-from models.HealthBar import HealthBar
 
 character_repository = CharacterRepository()
 
 
 def generate_hero():
-    generated_hero = Character(playability=True)
+    generated_hero = Character(playability=True, xp=0)
     character_repository.add_character(generated_hero)
     return generated_hero
 
 
-def generate_enemies(count):
+def generate_enemies(count, character):
     counter = 0
     enemies_list = []
     while counter < count:
-        enemies_list.append(Character(playability=False))
+        enemies_list.append(Character(playability=False,
+                                      level=random.randint(character.level - 1, character.level + 1)))
         counter += 1
     character_repository.add_all(enemies_list)
     return enemies_list
@@ -69,8 +69,9 @@ def select_hero():
         return map_dictionary_to_character(hero)
 
 
-def select_enemy():
-    enemies_list = character_repository.find_all_by_playability_and_alive(playability=False)
+def select_enemy(character):
+    enemies_list = character_repository.find_all_by_playability_and_alive_and_level(level=character.level,
+                                                                                    playability=False)
     if not enemies_list:
         print('Looks like you don\'t have any enemies, how many do you want to create? '
               '(write the number)\n')
@@ -81,50 +82,36 @@ def select_enemy():
                 break
             except ValueError:
                 print('Invalid entry, enter a number from the list above')
-        enemies_list = generate_enemies(count)
+        enemies_list = generate_enemies(count, character)
         return enemies_list.pop(random.randint(0, len(enemies_list) - 1))
     else:
         enemy = enemies_list.pop(random.randint(0, len(enemies_list) - 1))
         return map_dictionary_to_character(enemy)
 
 
-def display_pvp_status(first, first_bar, second, second_bar):
-    return (f'You: {first.name}\n'
-            f'{first_bar}\n'
-            f'Crit: {first.critical_attack}, '
-            f'Health: {first.health}, '
-            f'Armor: {first.armor}, '
-            f'Attack: {first.attack}, '
-            f'Luck: {first.luck}\n'
-            f'Enemy: {second.name}\n'
-            f'{second_bar}\n'
-            f'Crit: {second.critical_attack}, '
-            f'Health: {second.health}, '
-            f'Armor: {second.armor}, '
-            f'Attack: {second.attack}, '
-            f'Luck: {second.luck}\n')
-
-
-def apply_power_up(character, character_bar):
+def apply_power_up(character):
     input_prompt = 'Choose your power up:\n'
     first_power_up = generate_power_up(character)
     second_power_up = generate_power_up(character)
     input_prompt += f'[1] - +{first_power_up[1]} {first_power_up[0]}\n'
     input_prompt += f'[2] - +{second_power_up[1]} {second_power_up[0]}\n\n'
-    response = str(input(input_prompt))
-    buff = None
-    if response == '1':
-        buff = first_power_up
-    elif response == '2':
-        buff = second_power_up
+    print(input_prompt)
+    while True:
+        response = str(input())
+        if response == '1':
+            buff = first_power_up
+            break
+        elif response == '2':
+            buff = second_power_up
+            break
+        else:
+            print('Invalid entry, enter a number from the list above')
     if buff[0] == 'health':
         character.health += buff[1]
-        character_bar.curr_health = character.health
     elif buff[0] == 'attack':
         character.attack += buff[1]
     elif buff[0] == 'armor':
         character.armor += buff[1]
-    character_repository.update_character(character)
 
 
 def generate_power_up(character):
@@ -141,24 +128,43 @@ def generate_power_up(character):
         return ['armor', armor]
 
 
-def pvp_fight(hero, hero_bar, enemy, enemy_bar):
+def update_characters_info(hero, enemy):
+    character_repository.update_character(hero)
+    character_repository.update_character(enemy)
+
+
+def pvp_fight(hero, enemy):
     while hero.alive and enemy.alive:
-        print(display_pvp_status(hero, hero_bar, enemy, enemy_bar))
-        if hero.dice.roll_dice() < hero.luck:
-            apply_power_up(hero, hero_bar)
-            hero_bar.update_health(hero.health)
-            enemy_bar.update_health(enemy.health)
-            print(display_pvp_status(hero, hero_bar, enemy, enemy_bar))
+        print(str(hero) + '\n' + str(enemy))
+        if hero.dice.roll_dice() <= hero.luck:
+            apply_power_up(hero)
+            update_characters_info(hero, enemy)
+            hero.update_bars()
+            enemy.update_bars()
+            print(str(hero) + '\n' + str(enemy))
         response = str(input('Choose your action:\n'
-                             '[1] - attack\n\n'))
+                             '[1] - attack\n'
+                             '[2] - run away\n\n'))
         if response == '1':
             enemy.take_damage(hero)
             hero.take_damage(enemy)
-            character_repository.update_character(hero)
-            character_repository.update_character(enemy)
-            hero_bar.update_health(hero.health)
-            enemy_bar.update_health(enemy.health)
-    print(display_pvp_status(hero, hero_bar, enemy, enemy_bar))
+            update_characters_info(hero, enemy)
+        elif response == '2':
+            if hero.dice.roll_dice() <= hero.luck:
+                print('You successfully escaped\n')
+                update_characters_info(hero, enemy)
+                hero.update_bars()
+                enemy.update_bars()
+                break
+            else:
+                print('You couldn\'t escape\n')
+                enemy_curr_luck = enemy.luck
+                enemy.luck = 100
+                hero.take_damage(enemy)
+                enemy.luck = enemy_curr_luck
+                update_characters_info(hero, enemy)
+                enemy.update_bars()
+    print(str(hero) + '\n' + str(enemy))
 
 
 def start_game():
@@ -166,27 +172,28 @@ def start_game():
                          '[1] - PVP\n'
                          '[2] - PVE\n\n'))
     if response == '1':
-        print('Moving to PVP')
+        print('Moving to PVP\n')
         hero = select_hero()
         start_pvp(hero)
     elif response == '2':
-        print('Moving to PVE')
+        print('Moving to PVE\n')
 
 
 def start_pvp(hero):
-    hero_bar = HealthBar(max_health=hero.max_health, curr_health=hero.health)
-    enemy = select_enemy()
-    enemy_bar = HealthBar(max_health=enemy.max_health, curr_health=enemy.health)
-    pvp_fight(hero, hero_bar, enemy, enemy_bar)
-    if not enemy.alive:
-        print('You win')
+    enemy = select_enemy(hero)
+    pvp_fight(hero, enemy)
+    if hero.alive:
+        if not enemy.alive:
+            print('You win\n')
         response = str(input('Continue?\n'
                              '[1] - Yes\n'
                              '[2] - No\n\n'))
         if response == '1':
             start_pvp(hero)
+        elif response == '2':
+            start_game()
     else:
-        print('Game over')
+        print('Game over\n')
         start_game()
 
 
