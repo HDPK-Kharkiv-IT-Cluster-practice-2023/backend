@@ -11,3 +11,14 @@ ADD COLUMN balance INT,
 ADD COLUMN alive BOOLEAN,
 ADD COLUMN playability BOOLEAN,
 ADD COLUMN max_health INT;
+
+
+ALTER TABLE mob_types
+ADD COLUMN level INT,
+ADD COLUMN xp INT,
+ADD COLUMN balance INT,
+ADD COLUMN alive BOOLEAN,
+ADD COLUMN max_health INT,
+ADD COLUMN critical_attack INT;
+
+ALTER TABLE mob_types RENAME COLUMN mob_id TO id;

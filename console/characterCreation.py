@@ -43,8 +43,9 @@ class Character:
         if actual_damage >= self.health:
             self.health = 0
             self.alive = False
-            character.gain_xp(self.xp)
-            character.update_bars()
+            if isinstance(character, Character):
+                character.gain_xp(self.xp)
+                character.update_bars()
             self.xp = 0
         else:
             self.health -= actual_damage
