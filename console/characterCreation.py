@@ -6,8 +6,8 @@ from models.XpBar import XpBar
 
 
 class Character:
-    def __init__(self, id=None, name=None, level=1, xp=None, max_health=None, health=0,
-                 armor=None, attack=None, luck=None, balance=0,
+    def __init__(self, id=None, name=None, level=1, xp=None, max_health=1, health=0,
+                 armor=0, attack=0, luck=0, balance=0,
                  alive=True, critical_attack=2, playability=False, stat_points=None):
         fake = Faker()
         self.dice = Dice()
@@ -17,11 +17,11 @@ class Character:
         self.stat_points = stat_points if stat_points is not None else self.calculate_stat_points_by_level(self.level)
         self.xp_goal = self.calculate_xp_by_level()
         self._xp = xp if xp is not None else random.randint(self.xp_goal // 4, self.xp_goal // 2)
-        self.max_health = max_health if max_health is not None else self.generate_random_stat_by_level(15, 35, 10)
+        self.max_health = max_health
         self._health = health if health else self.max_health
-        self.armor = armor if armor is not None else self.generate_random_stat_by_level(0, 10, 5)
-        self.attack = attack if attack is not None else self.generate_random_stat_by_level(1, 10, 5)
-        self.luck = luck if luck is not None else self.generate_random_stat_by_level(1, 10, 5)
+        self.attack = attack
+        self.armor = armor
+        self.luck = luck
         self.balance = balance
         self.alive = alive
         self.critical_attack = critical_attack
@@ -29,17 +29,35 @@ class Character:
         self.health_bar = HealthBar(self)
         self.xp_bar = XpBar(self)
 
-        self.point_spread()
+        self.init_stats()
 
-    def point_spread(self):
-        standard = self.calculate_stat_points_by_level(self.level)
-        standard -= self.max_health + self.armor + self.attack + self.luck
-        if standard < 0:
+    def calculate_points_balance(self):
+        points = self.calculate_stat_points_by_level(self.level)
+        points -= self.max_health + self.armor + self.attack + self.luck
+        if points < 0:
             raise OverflowError
         else:
-            self.stat_points = standard
+            self.stat_points = points
+            
+    def init_stats(self):
+        points = self.point_spread()
+        self.luck = points
+        self.health_bar = HealthBar(self)
+        self.xp_bar = XpBar(self)
+        self.calculate_points_balance()
 
-    def generate_random_stat_by_level(self, min, max, increase_by_level):
+    def point_spread(self):
+        points = self.calculate_stat_points_by_level(self.level)
+        self.max_health = random.randint(15, 35 + (self.level - 1) * 2)
+        self.health = self.max_health
+        self.attack = random.randint(1, 10 + (self.level - 1) * 2)
+        self.armor = random.randint(0, 10 + (self.level - 1) * 1)
+        points -= self.max_health + self.armor + self.attack
+        if points < 0:
+            points = self.point_spread()
+        return points
+
+    def generate_random_stat_by_level(self, min, max, increase_by_level=0):
         stat_value = random.randint(min, max + (self.level - 1) * increase_by_level)
         if self.stat_points < stat_value:
             stat_value = self.stat_points
@@ -87,7 +105,7 @@ class Character:
             if self.xp == 0:
                 self.xp = random.randint(self.xp_goal // 4, self.xp_goal // 2)
         else:
-            self.stat_points = self.point_spread()
+            self.calculate_points_balance()
 
     def skills_up(self, new_max_health, new_armor, new_attack, new_luck):
         if new_max_health + new_armor + new_attack + new_luck > self.calculate_stat_points_by_level(self.level):
@@ -98,7 +116,7 @@ class Character:
         self.armor = new_armor
         self.attack = new_attack
         self.luck = new_luck
-        self.point_spread()
+        self.calculate_points_balance()
         self.update_bars()
 
     @property

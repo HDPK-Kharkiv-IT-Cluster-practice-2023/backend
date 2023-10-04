@@ -6,7 +6,7 @@ from models.XpBar import XpBar
 
 
 class Mob:
-    def __init__(self, character=None, id=None, name=None, level=None, xp=None, max_health=None, health=None,
+    def __init__(self, character=None, id=None, name=None, level=None, xp=None, max_health=1, health=None,
                  armor=None, attack=None, luck=None, balance=0,
                  alive=True, critical_attack=2):
         mob_names = ["Zombie", "Skeleton", "Spider", "Slime", "Goblin"]
@@ -15,15 +15,33 @@ class Mob:
         self.id = id
         self.level = level if level else character.level
         self.xp = xp if xp else random.randint(character.xp_goal // 4, character.xp_goal // 2)
-        self.max_health = max_health if max_health else random.randint(70, 100 + (self.level - 1) * 10)
-        self._health = self.max_health
-        self.armor = armor if armor else random.randint(1, 10 + (self.level - 1) * 3)
-        self.attack = attack if attack else random.randint(5, 20 + (self.level - 1) * 3)
-        self.luck = luck if luck else random.randint(1, 10 + (self.level - 1) * 1)
+        self.max_health = max_health
+        self._health = health if health is not None else self.max_health
+        self.armor = armor
+        self.attack = attack
+        self.luck = luck
         self.balance = balance
         self.alive = alive
         self.critical_attack = critical_attack
         self.health_bar = HealthBar(self)
+
+        self.init_stats()
+
+    def init_stats(self):
+        points = self.point_spread()
+        self.luck = points
+        self.health_bar = HealthBar(self)
+
+    def point_spread(self):
+        points = self.calculate_stat_points_by_level(self.level)
+        self.max_health = random.randint(15, 20 + (self.level - 1) * 2)
+        self.health = self.max_health
+        self.attack = random.randint(1, 10 + (self.level - 1) * 2)
+        self.armor = random.randint(0, 5 + (self.level - 1) * 1)
+        points -= self.max_health + self.armor + self.attack
+        if points < 0:
+            points = self.point_spread()
+        return points
 
     def take_damage(self, character):
         if not character.alive:
@@ -41,6 +59,11 @@ class Mob:
             self.xp = 0
         else:
             self.health -= actual_damage
+
+    @staticmethod
+    def calculate_stat_points_by_level(level):
+        base_stat_points = 40
+        return base_stat_points + (level - 1) * 5
 
     @property
     def health(self):
