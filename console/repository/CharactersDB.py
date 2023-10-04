@@ -24,11 +24,11 @@ class CharacterRepository:
         cursor = connection.cursor()
         cursor.execute(
             "INSERT INTO characters (name, level, xp, max_health, health, armor, attack, luck, balance, alive, "
-            "critical_attack, playability)"
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            "critical_attack, playability, stat_points)"
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (character.name, character.level, character.xp, character.max_health, character.health, character.armor,
              character.attack, character.luck, character.balance, character.alive, character.critical_attack,
-             character.playability)
+             character.playability, character.stat_points)
         )
         new_id = cursor.fetchone()[0]
         connection.commit()
@@ -41,10 +41,11 @@ class CharacterRepository:
         cursor = connection.cursor()
         cursor.execute(
             "UPDATE characters SET name = %s, level = %s, xp = %s, max_health = %s, health = %s , armor = %s, "
-            "attack = %s, luck = %s, balance = %s, alive = %s, critical_attack = %s, playability = %s WHERE id = %s",
+            "attack = %s, luck = %s, balance = %s, alive = %s, critical_attack = %s, playability = %s, "
+            "stat_points = %s WHERE id = %s",
             (character.name, character.level, character.xp, character.max_health, character.health, character.armor,
              character.attack, character.luck, character.balance, character.alive, character.critical_attack,
-             character.playability, character.id)
+             character.playability, character.stat_points, character.id)
         )
         connection.commit()
         cursor.close()
@@ -56,11 +57,11 @@ class CharacterRepository:
         for character in characters_list:
             cursor.execute(
                 "INSERT INTO characters (name, level, xp, max_health, health, armor, attack, luck, balance, alive, "
-                "critical_attack, playability)"
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+                "critical_attack, playability, stat_points)"
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
                 (character.name, character.level, character.xp, character.max_health, character.health, character.armor,
                  character.attack, character.luck, character.balance, character.alive, character.critical_attack,
-                 character.playability)
+                 character.playability, character.stat_points)
             )
             new_id = cursor.fetchone()[0]
             character.id = new_id

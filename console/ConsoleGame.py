@@ -10,10 +10,52 @@ character_repository = CharacterRepository()
 mob_repository = MobRepository()
 
 
-def generate_hero():
+def crate_hero_manually():
+    print('Write the following characteristics across the space:\n'
+          'level max_health armor attack luck\n')
+    while True:
+        response = str(input())
+        response_values = response.split()
+        if len(response_values) != 5:
+            print('Invalid entry, enter 5 numbers across the space')
+            continue
+        try:
+            values = [int(i) for i in response_values]
+        except ValueError:
+            print('Invalid entry, enter only numbers')
+            continue
+        try:
+            generated_hero = Character(level=values[0], max_health=values[1], armor=values[2], attack=values[3],
+                                       luck=values[4], playability=True, xp=0)
+            character_repository.add_character(generated_hero)
+            print(generated_hero)
+            return generated_hero
+        except OverflowError:
+            print(f'Invalid entry, for level {values[0]} max number of stat points is '
+                  f'{Character.calculate_stat_points_by_level(values[0])}')
+
+
+def crate_hero_random():
     generated_hero = Character(playability=True, xp=0)
-    character_repository.add_character(generated_hero)
-    return generated_hero
+    print(f'Your hero: \n{generated_hero}\n')
+    response = str(input('Do you want to create that character?\n'
+                         '[1] - Yes\n'
+                         '[2] - No\n\n'))
+    if response == '1':
+        character_repository.add_character(generated_hero)
+        return generated_hero
+    else:
+        return crate_hero_random()
+
+
+def generate_hero():
+    response = str(input('Choose generation type: \n'
+                         '[1] - Manually\n'
+                         '[2] - Random\n\n'))
+    if response == '1':
+        return crate_hero_manually()
+    elif response == '2':
+        return crate_hero_random()
 
 
 def generate_enemies(count, character, is_mob):
@@ -23,8 +65,13 @@ def generate_enemies(count, character, is_mob):
         if is_mob:
             enemies_list.append(Mob(character))
         else:
+            if character.level - 1 == 0:
+                min = 1
+            else:
+                min = character.level - 1
+            max = character.level + 1
             enemies_list.append(Character(playability=False,
-                                          level=random.randint(character.level - 1, character.level + 1)))
+                                          level=random.randint(min, max)))
         counter += 1
     if is_mob:
         mob_repository.add_all(enemies_list)
@@ -44,7 +91,8 @@ def generate_character_chooser(characters_list):
                     f'Armor: {character.get("armor")}, '
                     f'Luck: {character.get("luck")}, '
                     f'Crit: {character.get("critical_attack")}, '
-                    f'Balance: {character.get("balance")}]\n')
+                    f'Balance: {character.get("balance")}, '
+                    f'Points: {character.get("stat_points")}]\n')
         i += 1
     request += f'[{i}] - Generate new character\n'
     return request
@@ -203,17 +251,58 @@ def pvp_fight(hero, enemy):
 def choose_game_mode(hero):
     response = str(input('Choose your game mode:\n'
                          '[1] - PVP\n'
-                         '[2] - PVE\n\n'))
+                         '[2] - PVE\n'
+                         '[3] - Upgrade room\n\n'))
     if response == '1':
         print('Moving to PVP\n')
         start_pvp(hero)
     elif response == '2':
         print('Moving to PVE\n')
         start_pve(hero)
+    elif response == '3':
+        print('Upgrade room\n')
+        upgrade_room(hero)
 
 
 def start_game():
     hero = select_hero()
+    choose_game_mode(hero)
+
+
+def upgrade_room(hero):
+    print(f'You: {hero}')
+    print('Write the following characteristics across the space:\n'
+          'max_health attack armor luck\n')
+    while True:
+        response = str(input())
+        response_values = response.split()
+        if len(response_values) != 4:
+            print('Invalid entry, enter 4 numbers across the space')
+            continue
+        try:
+            values = [int(i) for i in response_values]
+        except ValueError:
+            print('Invalid entry, enter only numbers')
+            continue
+        try:
+            if values[0] < hero.max_health:
+                raise ValueError
+            if values[1] < hero.attack:
+                raise ValueError
+            if values[2] < hero.armor:
+                raise ValueError
+            if values[3] < hero.luck:
+                raise ValueError
+            hero.skills_up(new_max_health=values[0], new_attack=values[1], new_armor=values[2], new_luck=values[3])
+            print(hero)
+            break
+        except OverflowError:
+            print(f'Invalid entry, for level {hero.level} max number of stat points is '
+                  f'{hero.calculate_stat_points_by_level(hero.level)}')
+        except ValueError:
+            print(f'Invalid entry, new stat can\'t be lower than old')
+
+    character_repository.update_character(hero)
     choose_game_mode(hero)
 
 
