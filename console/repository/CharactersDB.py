@@ -7,7 +7,7 @@ class CharacterRepository:
         self.connection_creds = {
             'host': 'localhost',
             'database': 'charactersdb',
-            'user': 'postgres',
+            'user': 'makswinters',
             'password': 'admin'
         }
 
