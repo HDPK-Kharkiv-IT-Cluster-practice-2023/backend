@@ -7,6 +7,7 @@ from repository.MobbDB import MobRepository
 
 import json
 
+hero = None
 character_repository = CharacterRepository()
 app = Flask(__name__, template_folder="templates")
 
@@ -22,6 +23,7 @@ def cl():
     jsoncharacter1 = json.dumps(character_repository.find_all_by_playability_and_alive(playability=True))
     response = jsonify(jsoncharacter1)
     response.headers['Content-Type'] = 'application/json'
+    print(hero)
     return response.json
 
 @app.route('/addcharacter', methods=['POST'])
@@ -30,12 +32,24 @@ def generate_hero():
     character_repository.add_character(generated_hero)
     return jsonify({"message": "Character has been created."})
 
-# @app.route('/character1')
-# def c1():
-#     jsoncharacter1 = json.dumps(character1.__dict__)
-#     response = jsonify(jsoncharacter1)
-#     response.headers['Content-Type'] = 'application/json'
-#     return response.json
+@app.route('/selectcharacter', methods=['POST'])
+def select_character():
+    global hero
+    print(request.form['post'])
+    if request.method == 'POST':
+        if 'post' in request.form:
+            pvp_response = request.form['post']
+            index = int(pvp_response)
+            heroes_list = character_repository.find_all_by_playability_and_alive(playability=True)
+            hero = heroes_list.pop(index)
+    return jsonify({"message": "Character has been created."})
+
+@app.route('/character')
+def c():
+    jsoncharacter = json.dumps(hero)
+    response = jsonify(jsoncharacter)
+    response.headers['Content-Type'] = 'application/json'
+    return response.json
 
 # @app.route('/character2')
 # def c2():
