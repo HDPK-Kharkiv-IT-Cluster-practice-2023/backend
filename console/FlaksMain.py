@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 
+from ConsoleGame import *
 from characterCreation import Character
 from Mob_Generation_fix import Mob
 from repository.CharactersDB import CharacterRepository
@@ -8,6 +9,8 @@ from repository.MobbDB import MobRepository
 import json
 
 hero = None
+enemy = None
+game_mode = None
 character_repository = CharacterRepository()
 app = Flask(__name__, template_folder="templates")
 
@@ -35,6 +38,7 @@ def generate_hero():
 @app.route('/selectcharacter', methods=['POST'])
 def select_character():
     global hero
+    global heromapped
     print(request.form['post'])
     if request.method == 'POST':
         if 'post' in request.form:
@@ -42,6 +46,40 @@ def select_character():
             index = int(pvp_response)
             heroes_list = character_repository.find_all_by_playability_and_alive(playability=True)
             hero = heroes_list.pop(index)
+            hero = map_dictionary_to_character(hero)
+    return jsonify({"message": "Character has been created."})
+
+@app.route('/selectmode', methods=['POST'])
+def choose_game_mode():
+    global game_mode
+    if request.method == 'POST':
+        if 'post' in request.form:
+            response = request.form['post']
+            if response == '1':
+                game_mode = 1
+                print('Moving to PVP\n')
+            elif response == '2':
+                game_mode = 2
+                print('Moving to PVE\n')
+    return jsonify({"message": "Game mode has been selected."})
+
+@app.route('/enemylist')
+def el():
+    enemylist = json.dumps(character_repository.find_all_by_playability_and_alive_and_level(level=hero.level,
+                                                                                        playability=False))
+    response = jsonify(enemylist)
+    response.headers['Content-Type'] = 'application/json'
+    print(enemy)
+    return response.json
+
+@app.route('/selectenemy', methods=['POST'])
+def select_enemy():
+    global enemy
+    print(request.form['post'])
+    if request.method == 'POST':
+        enemies_list = character_repository.find_all_by_playability_and_alive_and_level(level=hero.level,
+                                                                                        playability=False)
+        enemy = enemies_list.pop(random.randint(0, len(enemies_list) - 1))
     return jsonify({"message": "Character has been created."})
 
 @app.route('/character')
