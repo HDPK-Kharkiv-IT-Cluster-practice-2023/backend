@@ -1,12 +1,11 @@
 from flask import Flask, render_template, request, jsonify
+import json 
 
 from ConsoleGame import *
 from characterCreation import Character
 from Mob_Generation_fix import Mob
 from repository.CharactersDB import CharacterRepository
 from repository.MobbDB import MobRepository
-
-import json
 
 hero = None
 enemy = None
@@ -38,7 +37,6 @@ def generate_hero():
 @app.route('/selectcharacter', methods=['POST'])
 def select_character():
     global hero
-    global heromapped
     print(request.form['post'])
     if request.method == 'POST':
         if 'post' in request.form:
@@ -69,7 +67,6 @@ def el():
                                                                                         playability=False))
     response = jsonify(enemylist)
     response.headers['Content-Type'] = 'application/json'
-    print(enemy)
     return response.json
 
 @app.route('/selectenemy', methods=['POST'])
@@ -80,15 +77,23 @@ def select_enemy():
         enemies_list = character_repository.find_all_by_playability_and_alive_and_level(level=hero.level,
                                                                                         playability=False)
         enemy = enemies_list.pop(random.randint(0, len(enemies_list) - 1))
+        enemy = map_dictionary_to_character(enemy)
+        print(enemy)
     return jsonify({"message": "Character has been created."})
 
 @app.route('/character')
 def c():
-    jsoncharacter = json.dumps(hero)
+    jsoncharacter = hero.toJSON()
     response = jsonify(jsoncharacter)
     response.headers['Content-Type'] = 'application/json'
     return response.json
 
+@app.route('/enemy')
+def e():
+    jsonenemy = enemy.toJSON()
+    response = jsonify(jsonenemy)
+    response.headers['Content-Type'] = 'application/json'
+    return response.json
 # @app.route('/character2')
 # def c2():
 #     jsoncharacter2 = json.dumps(character2.__dict__)

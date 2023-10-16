@@ -3,6 +3,7 @@ from faker import Faker
 from models.Dice import Dice
 from models.HealthBar import HealthBar
 from models.XpBar import XpBar
+import json
 
 
 class Character:
@@ -67,6 +68,24 @@ class Character:
         self.xp_goal = self.calculate_xp_by_level()
         if not self.playability and self.xp == 0:
             self.xp = random.randint(self.xp_goal // 4, self.xp_goal // 2)
+
+    def toJSON(self):
+        character_dict = {
+            "id": self.id,
+            "name": self.name,
+            "criticalAttack": self.critical_attack,
+            "health": self.health,
+            "armor": self.armor,
+            "attack": self.attack,
+            "luck": self.luck,
+            "level": self.level,
+            "xp": self.xp,
+            "balance": self.balance,
+            "alive": self.alive,
+            "playability": self.playability,
+            "maxHealth": self.max_health
+        }
+        return json.dumps(character_dict, sort_keys=False, indent=4)
 
     @property
     def health(self):
