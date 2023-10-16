@@ -20,13 +20,12 @@ app = Flask(__name__, template_folder="templates")
 #     character2.__init__()
 #     return jsonify({"message": "Characters have been restarted."})
 
-@app.route('/characterslist')
-def cl():
-    jsoncharacter1 = json.dumps(character_repository.find_all_by_playability_and_alive(playability=True))
-    response = jsonify(jsoncharacter1)
+@app.route('/api/v1/characters/<playability>')
+def get_characters(playability):
+    isPlayable = playability.lower() == 'true'
+    response = jsonify(character_repository.find_all_by_playability_and_alive(playability=isPlayable))
     response.headers['Content-Type'] = 'application/json'
-    print(hero)
-    return response.json
+    return response
 
 @app.route('/addcharacter', methods=['POST'])
 def generate_hero():
