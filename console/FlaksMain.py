@@ -13,17 +13,16 @@ game_mode = None
 character_repository = CharacterRepository()
 app = Flask(__name__, template_folder="templates")
 
-
-# @app.route('/init', methods=['POST'])
-# def restart():
-#     character1.__init__()
-#     character2.__init__()
-#     return jsonify({"message": "Characters have been restarted."})
+@app.route('/api/v1/status')
+def status():
+    response = {'status': 'OK'}
+    return jsonify(response)
 
 @app.route('/api/v1/characters/<playability>')
 def get_characters(playability):
     isPlayable = playability.lower() == 'true'
     response = jsonify(character_repository.find_all_by_playability_and_alive(playability=isPlayable))
+    print(character_repository.find_all_by_playability_and_alive(playability=isPlayable))
     response.headers['Content-Type'] = 'application/json'
     return response
 
@@ -60,17 +59,10 @@ def choose_game_mode():
                 print('Moving to PVE\n')
     return jsonify({"message": "Game mode has been selected."})
 
-@app.route('/enemylist')
-def el():
-    enemylist = json.dumps(character_repository.find_all_by_playability_and_alive_and_level(level=hero.level,
-                                                                                        playability=False))
-    response = jsonify(enemylist)
-    response.headers['Content-Type'] = 'application/json'
-    return response.json
-
 @app.route('/selectenemy', methods=['POST'])
 def select_enemy():
     global enemy
+    global enemies_list
     print(request.form['post'])
     if request.method == 'POST':
         enemies_list = character_repository.find_all_by_playability_and_alive_and_level(level=hero.level,
@@ -78,6 +70,12 @@ def select_enemy():
         enemy = enemies_list.pop(random.randint(0, len(enemies_list) - 1))
         enemy = map_dictionary_to_character(enemy)
         print(enemy)
+    return jsonify({"message": "Character has been created."})
+
+@app.route('/addenemy', methods=['POST'])
+def generate_enemy():
+    new_enemy = Character(playability=False, level=random.randint(hero.level - 1, hero.level + 1))
+    character_repository.add_character(new_enemy)
     return jsonify({"message": "Character has been created."})
 
 @app.route('/character')

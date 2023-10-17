@@ -93,9 +93,13 @@ class CharacterRepository:
                        "WHERE playability = %s "
                        "AND alive = %s ", (playability, alive))
         records = cursor.fetchall()
+
+        # Convert the list of dictionaries
+        records_dict = [dict(record) for record in records]
+
         cursor.close()
         connection.close()
-        return records
+        return records_dict
 
     def find_all_by_playability_and_alive_and_level(self, playability, level, alive=True):
         connection = self._create_connection()
