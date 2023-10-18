@@ -209,5 +209,18 @@ def start_fight(hero_id, enemy_id):
                     'enemy': enemy})
 
 
+@app.route('/api/v1/character/<character_id>', methods=['PATCH'])
+def update_character(character_id):
+    character = character_repository.find_by_id(character_id)
+    if character is None:
+        return jsonify({"message": f"There's no character with an id {character_id}"}), 404
+    else:
+        data = request.get_json()
+        for key, value in data.items():
+            character[key] = value
+        character_repository.update_character(map_dictionary_to_character(character))
+        return jsonify({'character': character})
+
+
 if __name__ == "__main__":
     app.run(debug=True)

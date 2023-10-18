@@ -1,5 +1,6 @@
 import psycopg2
 from psycopg2 import extras
+from psycopg2.errors import InvalidTextRepresentation
 
 
 class CharacterRepository:
@@ -116,8 +117,13 @@ class CharacterRepository:
     def find_by_id(self, character_id):
         connection = self._create_connection()
         cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cursor.execute("SELECT * FROM characters WHERE id = %s", (character_id,))
+        try:
+            cursor.execute("SELECT * FROM characters WHERE id = %s", (character_id,))
+        except InvalidTextRepresentation:
+            return None
         record = cursor.fetchone()
+        if record is None:
+            return None
         records_dict = dict(record)
         cursor.close()
         connection.close()
