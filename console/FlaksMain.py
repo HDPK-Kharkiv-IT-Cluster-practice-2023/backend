@@ -235,5 +235,13 @@ def update_character(character_id):
         return jsonify({'character': character})
 
 
+@app.route('/api/v1/character', methods=['POST'])
+def create_character():
+    data = request.get_json()
+    character = map_dictionary_to_character(data)
+    character_id = character_repository.add_character(character)
+    return jsonify({'character_id': character_id})
+
+
 if __name__ == "__main__":
     app.run(debug=True)

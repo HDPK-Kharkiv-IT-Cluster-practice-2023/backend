@@ -133,7 +133,7 @@ class CharacterRepository:
         if character.id is None:
             new_id = self._create_in_database(character)
             character.id = new_id
-            return True
+            return new_id
         else:
             return False
 
