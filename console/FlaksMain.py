@@ -205,8 +205,8 @@ def start_fight(hero_id, enemy_id):
             update_characters_info(enemy=enemy, update_bars=True)
     hero = map_character_to_dictionary(hero)
     enemy = map_mob_to_dictionary(enemy)
-    return jsonify({'hero': f'{hero}',
-                    'enemy': f'{enemy}'})
+    return jsonify({'hero': hero,
+                    'enemy': enemy})
 
 
 if __name__ == "__main__":
