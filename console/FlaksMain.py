@@ -163,40 +163,51 @@ def get_mobs():
 
 @app.route('/api/v1/mob/<mob_id>')
 def get_mob_by_id(mob_id):
-    response = jsonify(mob_repository.find_by_id(mob_id))
-    response.headers['Content-Type'] = 'application/json'
-    return response
+    mob = mob_repository.find_by_id(mob_id)
+    if mob is None:
+        return jsonify({"message": f"There's no mob with an id {mob_id}"}), 404
+    return jsonify({'mob': mob})
 
 
 @app.route('/api/v1/mob/<character_id>', methods=['POST'])
 def add_mob(character_id):
-    character = map_dictionary_to_character(character_repository.find_by_id(character_id))
-    print(character)
-    mob_id = mob_repository.add_mob(Mob(character))
-    return jsonify({"mob_id": f'{mob_id}'})
+    character = character_repository.find_by_id(character_id)
+    if character is None:
+        return jsonify({"message": f"There's no character with an id {character_id}"}), 404
+    else:
+        character = map_dictionary_to_character(character)
+        mob_id = mob_repository.add_mob(Mob(character))
+        return jsonify({"mob_id": f'{mob_id}'})
 
 
 @app.route('/api/v1/fight/<hero_id>/<enemy_id>')
 def start_fight(hero_id, enemy_id):
-    hero = map_dictionary_to_character(character_repository.find_by_id(hero_id))
+    hero = character_repository.find_by_id(hero_id)
+    if hero is None:
+        return jsonify({"message": f"There's no hero with an id {hero_id}"}), 404
+    hero = map_dictionary_to_character(hero)
     enemy_type = request.args.get('enemy_type')
     if enemy_type == 'mob':
-        enemy = map_dictionary_to_mob(mob_repository.find_by_id(enemy_id))
+        enemy = mob_repository.find_by_id(enemy_id)
     elif enemy_type == 'character':
-        enemy = map_dictionary_to_character(character_repository.find_by_id(enemy_id))
+        enemy = character_repository.find_by_id(enemy_id)
     else:
-        return jsonify({'error': 'cannot find parameter enemy_type'})
+        return jsonify({'error': 'cannot find parameter enemy_type'}), 404
+    if enemy is None:
+        return jsonify({"message": f"There's no enemy with an id {enemy_id}"}), 404
+    enemy = map_dictionary_to_mob(enemy)
     action = request.args.get('action')
+    message = ''
     if action == 'attack':
         enemy.take_damage(hero)
         hero.take_damage(enemy)
         update_characters_info(hero, enemy, True)
     elif action == 'escape':
         if hero.dice.roll_dice() <= hero.luck:
-            print('You successfully escaped\n')
+            message = 'You successfully escaped'
             update_characters_info(hero, enemy)
         else:
-            print('You couldn\'t escape\n')
+            message = 'You couldn\'t escape'
             enemy_curr_luck = enemy.luck
             enemy.luck = 100
             hero.take_damage(enemy)
@@ -205,8 +216,10 @@ def start_fight(hero_id, enemy_id):
             update_characters_info(enemy=enemy, update_bars=True)
     hero = map_character_to_dictionary(hero)
     enemy = map_mob_to_dictionary(enemy)
-    return jsonify({'hero': hero,
-                    'enemy': enemy})
+    response = {'hero': hero,
+                'enemy': enemy,
+                'message': message}
+    return jsonify(response)
 
 
 @app.route('/api/v1/character/<character_id>', methods=['PATCH'])
