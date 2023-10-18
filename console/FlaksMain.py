@@ -189,13 +189,16 @@ def start_fight(hero_id, enemy_id):
     enemy_type = request.args.get('enemy_type')
     if enemy_type == 'mob':
         enemy = mob_repository.find_by_id(enemy_id)
+        if enemy is None:
+            return jsonify({"message": f"There's no enemy with an id {enemy_id}"}), 404
+        enemy = map_dictionary_to_mob(enemy)
     elif enemy_type == 'character':
         enemy = character_repository.find_by_id(enemy_id)
+        if enemy is None:
+            return jsonify({"message": f"There's no enemy with an id {enemy_id}"}), 404
+        enemy = map_dictionary_to_character(enemy)
     else:
         return jsonify({'error': 'cannot find parameter enemy_type'}), 404
-    if enemy is None:
-        return jsonify({"message": f"There's no enemy with an id {enemy_id}"}), 404
-    enemy = map_dictionary_to_mob(enemy)
     action = request.args.get('action')
     message = ''
     if action == 'attack':
