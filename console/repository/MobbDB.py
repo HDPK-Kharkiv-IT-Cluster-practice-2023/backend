@@ -26,7 +26,7 @@ class MobRepository:
         cursor.execute(
             "INSERT INTO mob_types (mob_name, level, xp, max_health, health, armor, attack, luck, balance, alive, "
             "critical_attack)"
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (character.name, character.level, character.xp, character.max_health, character.health, character.armor,
              character.attack, character.luck, character.balance, character.alive, character.critical_attack)
         )
@@ -93,9 +93,10 @@ class MobRepository:
         cursor.execute("SELECT * FROM mob_types "
                        "WHERE alive = %s ", (alive,))
         records = cursor.fetchall()
+        records_dict = [dict(record) for record in records]
         cursor.close()
         connection.close()
-        return records
+        return records_dict
 
     def find_all_by_alive_and_level(self, level, alive=True):
         connection = self._create_connection()
@@ -110,18 +111,19 @@ class MobRepository:
 
     def find_by_id(self, character_id):
         connection = self._create_connection()
-        cursor = connection.cursor()
+        cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cursor.execute("SELECT * FROM mob_types WHERE id = %s", (character_id,))
         record = cursor.fetchone()
+        records_dict = dict(record)
         cursor.close()
         connection.close()
-        return record
+        return records_dict
 
     def add_mob(self, character):
         if character.id is None:
             new_id = self._create_in_database(character)
             character.id = new_id
-            return True
+            return new_id
         else:
             return False
 

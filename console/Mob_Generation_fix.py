@@ -13,8 +13,8 @@ class Mob:
         self.name = name if name else random.choice(mob_names)
         self.dice = Dice()
         self.id = id
-        self.level = level if level else character.level
-        self.xp = xp if xp else random.randint(character.xp_goal // 4, character.xp_goal // 2)
+        self.level = level if level is not None else character.level
+        self.xp = xp if xp is not None else random.randint(character.xp_goal // 4, character.xp_goal // 2)
         self.max_health = max_health if max_health else random.randint(70, 100 + (self.level - 1) * 10)
         self._health = self.max_health
         self.armor = armor if armor else random.randint(1, 10 + (self.level - 1) * 3)

@@ -7,7 +7,7 @@ class CharacterRepository:
         self.connection_creds = {
             'host': 'localhost',
             'database': 'charactersdb',
-            'user': 'makswinters',
+            'user': 'postgres',
             'password': 'admin'
         }
 
@@ -115,12 +115,13 @@ class CharacterRepository:
 
     def find_by_id(self, character_id):
         connection = self._create_connection()
-        cursor = connection.cursor()
+        cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cursor.execute("SELECT * FROM characters WHERE id = %s", (character_id,))
         record = cursor.fetchone()
+        records_dict = dict(record)
         cursor.close()
         connection.close()
-        return record
+        return records_dict
 
     def add_character(self, character):
         if character.id is None:
