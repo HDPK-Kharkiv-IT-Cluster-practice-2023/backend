@@ -1,20 +1,18 @@
 import random
-from faker import Faker
 from models.Dice import Dice
 from models.HealthBar import HealthBar
-from models.XpBar import XpBar
 
 
 class Mob:
-    def __init__(self, character=None, id=None, name=None, level=None, xp=None, max_health=1, health=None,
+    def __init__(self, character=None, id=None, name=None, level=None, xp=None, max_health=None, health=None,
                  armor=None, attack=None, luck=None, balance=0,
                  alive=True, critical_attack=2):
         mob_names = ["Zombie", "Skeleton", "Spider", "Slime", "Goblin"]
         self.name = name if name else random.choice(mob_names)
         self.dice = Dice()
         self.id = id
-        self.level = level if level else character.level
-        self.xp = xp if xp else random.randint(character.xp_goal // 4, character.xp_goal // 2)
+        self.level = level if level is not None else character.level
+        self.xp = xp if xp is not None else random.randint(character.xp_goal // 4, character.xp_goal // 2)
         self.max_health = max_health
         self._health = health if health is not None else self.max_health
         self.armor = armor
@@ -23,13 +21,14 @@ class Mob:
         self.balance = balance
         self.alive = alive
         self.critical_attack = critical_attack
-        self.health_bar = HealthBar(self)
+        self.health_bar = None
 
         self.init_stats()
 
     def init_stats(self):
-        points = self.point_spread()
-        self.luck = points
+        if any(getattr(self, attr) is None for attr in ['max_health', 'armor', 'attack', 'luck']):
+            points = self.point_spread()
+            self.luck = points
         self.health_bar = HealthBar(self)
 
     def point_spread(self):
@@ -72,7 +71,8 @@ class Mob:
     @health.setter
     def health(self, value):
         self._health = value
-        self.health_bar.update_health(self)
+        if self.health_bar is not None:
+            self.health_bar.update_health(self)
 
     def update_bars(self):
         self.health_bar.update_health(self)
@@ -96,6 +96,3 @@ class Mob:
                 f'Crit: {self.critical_attack}, '
                 f'Balance: {self.balance}\n')
 
-
-# mob1 = Mob()
-# print(mob1)

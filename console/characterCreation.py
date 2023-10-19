@@ -3,11 +3,12 @@ from faker import Faker
 from models.Dice import Dice
 from models.HealthBar import HealthBar
 from models.XpBar import XpBar
+import json
 
 
 class Character:
-    def __init__(self, id=None, name=None, level=1, xp=None, max_health=1, health=0,
-                 armor=0, attack=0, luck=0, balance=0,
+    def __init__(self, id=None, name=None, level=1, xp=None, max_health=None, health=None,
+                 armor=None, attack=None, luck=None, balance=0,
                  alive=True, critical_attack=2, playability=False, stat_points=None):
         fake = Faker()
         self.dice = Dice()
@@ -26,8 +27,8 @@ class Character:
         self.alive = alive
         self.critical_attack = critical_attack
         self.playability = playability
-        self.health_bar = HealthBar(self)
-        self.xp_bar = XpBar(self)
+        self.health_bar = None
+        self.xp_bar = None
 
         self.init_stats()
 
@@ -38,10 +39,11 @@ class Character:
             raise OverflowError
         else:
             self.stat_points = points
-            
+
     def init_stats(self):
-        points = self.point_spread()
-        self.luck = points
+        if any(getattr(self, attr) is None for attr in ['max_health', 'armor', 'attack', 'luck']):
+            points = self.point_spread()
+            self.luck = points
         self.health_bar = HealthBar(self)
         self.xp_bar = XpBar(self)
         self.calculate_points_balance()
@@ -126,7 +128,8 @@ class Character:
     @health.setter
     def health(self, value):
         self._health = value
-        self.health_bar.update_health(self)
+        if self.health_bar is not None:
+            self.health_bar.update_health(self)
 
     @property
     def xp(self):
@@ -135,7 +138,8 @@ class Character:
     @xp.setter
     def xp(self, value):
         self._xp = value
-        self.xp_bar.update_xp(self)
+        if self.xp_bar is not None:
+            self.xp_bar.update_xp(self)
 
     def update_bars(self):
         self.xp_bar.update_xp(self)
@@ -165,6 +169,3 @@ class Character:
                 f'Crit: {self.critical_attack}, '
                 f'Balance: {self.balance}'
                 f'{points}\n')
-
-# character1 = CharacterRepository()
-# character2 = CharacterRepository()
