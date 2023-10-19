@@ -6,75 +6,75 @@ from sshtunnel import SSHTunnelForwarder
 
 class CharacterRepository:
     def __init__(self):
-        self.connection_creds = {
-            'host': 'bandydan-3203.postgres.pythonanywhere-services.com',
-            'port': 13203,
-            'db_username': 'super',
-            'db_password': 'U6Tdw8ReM',
-            'database_name': 'charactersdb',
-            'ssh_host': 'ssh.pythonanywhere.com',
-            'ssh_port': 22,
-            'ssh_username': 'bandydan',
-            'ssh_password': 'xb6W7LHNJ6!cRKi',
-            'ssh_private_key_password': 'masterkey',
-            'ssh_private_key': '/home/vitaly/.ssh/id_rsa'
-        }
+        # self.connection_creds = {
+        #     'name': 'global',
+        #     'host': 'bandydan-3203.postgres.pythonanywhere-services.com',
+        #     'port': 13203,
+        #     'db_username': 'super',
+        #     'db_password': 'U6Tdw8ReM',
+        #     'database_name': 'charactersdb',
+        #     'ssh_host': 'ssh.pythonanywhere.com',
+        #     'ssh_port': 22,
+        #     'ssh_username': 'bandydan',
+        #     'ssh_password': 'xb6W7LHNJ6!cRKi',
+        #     'ssh_private_key_password': 'masterkey',
+        #     'ssh_private_key': '/home/vitaly/.ssh/id_rsa'
+        # }
 
         # local database
 
-        # self.connection_creds = {
-        #     'host': 'localhost',
-        #     'database': 'charactersdb',
-        #     'user': 'postgres',
-        #     'password': 'admin'
-        # }
+        self.connection_creds = {
+            'name': 'local',
+            'host': 'localhost',
+            'database': 'charactersdb',
+            'user': 'postgres',
+            'password': 'admin'
+        }
 
-    # local database
-
-    # def _create_connection(self, tunnel):
-    #     # return psycopg2.connect(
-    #     #     host=self.connection_creds.get('host'),
-    #     #     database=self.connection_creds.get('database'),
-    #     #     user=self.connection_creds.get('user'),
-    #     #     password=self.connection_creds.get('password')
-    #     # )
-
-    # def _create_tunnel(self):
-    #     return None
+    def _create_connection(self, tunnel):
+        if self.connection_creds.get('name') == 'local':
+            return psycopg2.connect(
+                host=self.connection_creds.get('host'),
+                database=self.connection_creds.get('database'),
+                user=self.connection_creds.get('user'),
+                password=self.connection_creds.get('password')
+            )
+        else:
+            return psycopg2.connect(
+                user=self.connection_creds.get('db_username'),
+                password=self.connection_creds.get('db_password'),
+                host='127.0.0.1',
+                port=tunnel.local_bind_port,
+                database=self.connection_creds.get('database_name'),
+            )
 
     def _create_tunnel(self):
-        return SSHTunnelForwarder(
+        if self.connection_creds.get('name') == 'local':
+            return None
+        else:
+            return SSHTunnelForwarder(
                 (self.connection_creds.get('ssh_host'), self.connection_creds.get('ssh_port')),
                 ssh_username=self.connection_creds.get('ssh_username'),
                 ssh_password=self.connection_creds.get('ssh_password'),
                 ssh_private_key=self.connection_creds.get('ssh_private_key'),
                 ssh_private_key_password=self.connection_creds.get('ssh_private_key_password'),
                 remote_bind_address=(self.connection_creds.get('host'), self.connection_creds.get('port'))
-        )
-
-    def _create_connection(self, tunnel):
-        connection = psycopg2.connect(
-            user=self.connection_creds.get('db_username'),
-            password=self.connection_creds.get('db_password'),
-            host='127.0.0.1',
-            port=tunnel.local_bind_port,
-            database=self.connection_creds.get('database_name'),
-        )
-        return connection
+            )
 
     def _create_in_database(self, character):
         tunnel = self._create_tunnel()
-        tunnel.start()
+        if tunnel is not None:
+            tunnel.start()
         connection = self._create_connection(tunnel)
         cursor = connection.cursor()
         try:
             cursor.execute(
                 "INSERT INTO characters (name, level, xp, max_health, health, armor, attack, luck, balance, alive, "
-                "critical_attack, playability, stat_points, owner, status)"
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+                "critical_attack, playability, stat_points)"
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
                 (character.name, character.level, character.xp, character.max_health, character.health, character.armor,
                  character.attack, character.luck, character.balance, character.alive, character.critical_attack,
-                 character.playability, character.stat_points, 1, 1)
+                 character.playability, character.stat_points)
             )
             new_id = cursor.fetchone()[0]
             connection.commit()
@@ -87,7 +87,8 @@ class CharacterRepository:
 
     def _update_stats(self, character):
         tunnel = self._create_tunnel()
-        tunnel.start()
+        if tunnel is not None:
+            tunnel.start()
         connection = self._create_connection(tunnel)
         cursor = connection.cursor()
         try:
@@ -108,18 +109,19 @@ class CharacterRepository:
 
     def add_all(self, characters_list):
         tunnel = self._create_tunnel()
-        tunnel.start()
+        if tunnel is not None:
+            tunnel.start()
         connection = self._create_connection(tunnel)
         cursor = connection.cursor()
         try:
             for character in characters_list:
                 cursor.execute(
                     "INSERT INTO characters (name, level, xp, max_health, health, armor, attack, luck, balance, alive, "
-                    "critical_attack, playability, stat_points, owner, status)"
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
-                    (character.name, character.level, character.xp, character.max_health, character.health, character.armor,
-                     character.attack, character.luck, character.balance, character.alive, character.critical_attack,
-                     character.playability, character.stat_points, 1, 1)
+                    "critical_attack, playability, stat_points)"
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+                    (character.name, character.level, character.xp, character.max_health, character.health,
+                     character.armor, character.attack, character.luck, character.balance, character.alive,
+                     character.critical_attack, character.playability, character.stat_points)
                 )
                 new_id = cursor.fetchone()[0]
                 character.id = new_id
@@ -132,7 +134,8 @@ class CharacterRepository:
 
     def exist_by_id(self, character_id):
         tunnel = self._create_tunnel()
-        tunnel.start()
+        if tunnel is not None:
+            tunnel.start()
         connection = self._create_connection(tunnel)
         cursor = connection.cursor()
         try:
@@ -147,7 +150,8 @@ class CharacterRepository:
 
     def find_all(self):
         tunnel = self._create_tunnel()
-        tunnel.start()
+        if tunnel is not None:
+            tunnel.start()
         connection = self._create_connection(tunnel)
         cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
         try:
@@ -162,7 +166,8 @@ class CharacterRepository:
 
     def find_all_by_playability_and_alive(self, playability, alive=True):
         tunnel = self._create_tunnel()
-        tunnel.start()
+        if tunnel is not None:
+            tunnel.start()
         connection = self._create_connection(tunnel)
         cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
         try:
@@ -170,27 +175,18 @@ class CharacterRepository:
                            "WHERE playability = %s "
                            "AND alive = %s ", (playability, alive))
             records = cursor.fetchall()
-            return records
+            records_dict = [dict(record) for record in records]
+            return records_dict
         finally:
             cursor.close()
             connection.close()
             if tunnel is not None:
                 tunnel.stop()
-        cursor.execute("SELECT * FROM characters "
-                       "WHERE playability = %s "
-                       "AND alive = %s ", (playability, alive))
-        records = cursor.fetchall()
-
-        # Convert the list of dictionaries
-        records_dict = [dict(record) for record in records]
-
-        cursor.close()
-        connection.close()
-        return records_dict
 
     def find_all_by_playability_and_alive_and_level(self, playability, level, alive=True):
         tunnel = self._create_tunnel()
-        tunnel.start()
+        if tunnel is not None:
+            tunnel.start()
         connection = self._create_connection(tunnel)
         cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
         try:
@@ -208,31 +204,24 @@ class CharacterRepository:
 
     def find_by_id(self, character_id):
         tunnel = self._create_tunnel()
-        tunnel.start()
+        if tunnel is not None:
+            tunnel.start()
         connection = self._create_connection(tunnel)
-        cursor = connection.cursor()
+        cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
         try:
             cursor.execute("SELECT * FROM characters WHERE id = %s", (character_id,))
             record = cursor.fetchone()
-            return record
+            if record is None:
+                return None
+            records_dict = dict(record)
+            return records_dict
+        except InvalidTextRepresentation:
+            return None
         finally:
             cursor.close()
             connection.close()
             if tunnel is not None:
                 tunnel.stop()
-        connection = self._create_connection()
-        cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        try:
-            cursor.execute("SELECT * FROM characters WHERE id = %s", (character_id,))
-        except InvalidTextRepresentation:
-            return None
-        record = cursor.fetchone()
-        if record is None:
-            return None
-        records_dict = dict(record)
-        cursor.close()
-        connection.close()
-        return records_dict
 
     def add_character(self, character):
         if character.id is None:
