@@ -1,32 +1,43 @@
-from flask import Flask, render_template, request, jsonify
-import json 
+from flask import Flask, request, jsonify, make_response, Response
 
 from ConsoleGame import *
 from Mappers import *
-from characterCreation import Character
 from Mob_Generation_fix import Mob
+from characterCreation import Character
 from repository.CharactersDB import CharacterRepository
 from repository.MobbDB import MobRepository
 
-# hero = None
-# enemy = None
-# game_mode = None
 character_repository = CharacterRepository()
 mob_repository = MobRepository()
 app = Flask(__name__, template_folder="templates")
+
+
+@app.errorhandler(Exception)
+def handle_exception(error_message):
+    return jsonify({'message': f'{error_message}'}), 404
+
 
 @app.route('/api/v1/status')
 def status():
     response = {'status': 'OK'}
     return jsonify(response)
 
+
 @app.route('/api/v1/characters/<playability>')
 def get_characters(playability):
-    isPlayable = playability.lower() == 'true'
-    response = jsonify(character_repository.find_all_by_playability_and_alive(playability=isPlayable))
-    print(character_repository.find_all_by_playability_and_alive(playability=isPlayable))
+    is_playable = playability.lower() == 'true'
+    response = jsonify(character_repository.find_all_by_playability_and_alive(playability=is_playable))
+    print(character_repository.find_all_by_playability_and_alive(playability=is_playable))
     response.headers['Content-Type'] = 'application/json'
     return response
+
+
+@app.route('/api/v1/character/<character_id>')
+def get_character_by_id(character_id):
+    character = character_repository.find_by_id(character_id)
+    if character is None:
+        return jsonify({'error': f"There's no mob with an id {character_id}"}), 404
+    return jsonify({'character': character})
 
 # @app.route('/addcharacter', methods=['POST'])
 # def generate_hero():
@@ -165,7 +176,7 @@ def get_mobs():
 def get_mob_by_id(mob_id):
     mob = mob_repository.find_by_id(mob_id)
     if mob is None:
-        return jsonify({"message": f"There's no mob with an id {mob_id}"}), 404
+        return jsonify({'error': f"There's no mob with an id {mob_id}"}), 404
     return jsonify({'mob': mob})
 
 
@@ -173,32 +184,35 @@ def get_mob_by_id(mob_id):
 def add_mob(character_id):
     character = character_repository.find_by_id(character_id)
     if character is None:
-        return jsonify({"message": f"There's no character with an id {character_id}"}), 404
+        return jsonify({'error': f"There's no character with an id {character_id}"}), 404
     else:
         character = map_dictionary_to_character(character)
         mob_id = mob_repository.add_mob(Mob(character))
-        return jsonify({"mob_id": f'{mob_id}'})
+        return jsonify({'mob_id': f'{mob_id}'})
 
 
 @app.route('/api/v1/fight/<hero_id>/<enemy_id>')
-def start_fight(hero_id, enemy_id):
+def fight(hero_id, enemy_id):
     hero = character_repository.find_by_id(hero_id)
     if hero is None:
-        return jsonify({"message": f"There's no hero with an id {hero_id}"}), 404
-    hero = map_dictionary_to_character(hero)
+        return jsonify({'error': f"There's no hero with an id {hero_id}"}), 404
+    hero = validate_entity(hero)
+    if isinstance(hero, Response):
+        return hero
     enemy_type = request.args.get('enemy_type')
     if enemy_type == 'mob':
         enemy = mob_repository.find_by_id(enemy_id)
         if enemy is None:
-            return jsonify({"message": f"There's no enemy with an id {enemy_id}"}), 404
-        enemy = map_dictionary_to_mob(enemy)
+            return jsonify({'error': f"There's no enemy with an id {enemy_id}"}), 404
     elif enemy_type == 'character':
         enemy = character_repository.find_by_id(enemy_id)
         if enemy is None:
-            return jsonify({"message": f"There's no enemy with an id {enemy_id}"}), 404
-        enemy = map_dictionary_to_character(enemy)
+            return jsonify({'error': f"There's no enemy with an id {enemy_id}"}), 404
     else:
-        return jsonify({'error': 'cannot find parameter enemy_type'}), 404
+        return jsonify({'error': 'cannot find parameter enemy_type'}), 400
+    enemy = validate_entity(enemy, enemy_type)
+    if isinstance(enemy, Response):
+        return enemy
     action = request.args.get('action')
     message = ''
     if action == 'attack':
@@ -225,11 +239,29 @@ def start_fight(hero_id, enemy_id):
     return jsonify(response)
 
 
+def validate_entity(entity, entity_type='character'):
+    if entity_type == 'character':
+        try:
+            return map_dictionary_to_character(entity)
+        except OverflowError:
+            error_message = (f'For level {entity.get("level")} max number of stat points is '
+                             f'{Character.calculate_stat_points_by_level(entity.get("level"))}')
+            return make_response(jsonify({'error': error_message}), 400)
+
+    else:
+        try:
+            return map_dictionary_to_mob(entity)
+        except OverflowError:
+            error_message = (f'For level {entity.get("level")} max number of stat points is '
+                             f'{Character.calculate_stat_points_by_level(entity.get("level"))}')
+            return make_response(jsonify({'error': error_message}), 400)
+
+
 @app.route('/api/v1/character/<character_id>', methods=['PATCH'])
 def update_character(character_id):
     character = character_repository.find_by_id(character_id)
     if character is None:
-        return jsonify({"message": f"There's no character with an id {character_id}"}), 404
+        return jsonify({'error': f"There's no character with an id {character_id}"}), 404
     else:
         data = request.get_json()
         for key, value in data.items():
@@ -241,9 +273,20 @@ def update_character(character_id):
 @app.route('/api/v1/character', methods=['POST'])
 def create_character():
     data = request.get_json()
-    character = map_dictionary_to_character(data)
+    character = validate_entity(data)
+    if isinstance(character, Response):
+        return character
     character_id = character_repository.add_character(character)
     return jsonify({'character_id': character_id})
+
+
+@app.route('/api/v1/character/max_stat_points/<level>')
+def get_max_stat_points(level):
+    try:
+        max_stat_points = Character.calculate_stat_points_by_level(int(level))
+    except ValueError:
+        return jsonify({'error': f'{level} must be a number'}), 400
+    return jsonify({'max_stat_points': max_stat_points})
 
 
 if __name__ == "__main__":
