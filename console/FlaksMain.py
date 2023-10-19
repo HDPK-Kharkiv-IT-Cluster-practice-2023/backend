@@ -289,5 +289,16 @@ def get_max_stat_points(level):
     return jsonify({'max_stat_points': max_stat_points})
 
 
+@app.route('/api/v1/character/random/<level>/<playability>')
+def get_random_character(level, playability):
+    try:
+        level = int(level)
+    except ValueError:
+        return jsonify({'error': f'{level} must be a number'}), 400
+    generated_hero = Character(playability=playability, xp=0, level=level)
+    generated_hero = map_character_to_dictionary(generated_hero)
+    return jsonify({'generated_hero': generated_hero})
+
+
 if __name__ == "__main__":
     app.run(debug=True)

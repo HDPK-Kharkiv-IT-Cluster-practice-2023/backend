@@ -30,6 +30,7 @@ def map_character_to_dictionary(character):
         'balance': character.balance,
         'alive': character.alive,
         'critical_attack': character.critical_attack,
-        'playability': character.playability
+        'playability': character.playability,
+        'stat_points': character.stat_points
     }
 
