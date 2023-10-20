@@ -1,18 +1,11 @@
-from flask import Flask, render_template, request
+from flask import Flask
+from blueprints.documented_endpoints.documented_endpoints import blueprint as documented_endpoint
+from blueprints.game_endpoints.game_endpoints import blueprint as game_endpoints
 
 app = Flask(__name__)
 
+app.register_blueprint(game_endpoints)
+app.register_blueprint(documented_endpoint)
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-
-@app.route('/submit', methods=['POST'])
-def submit():
-    name = request.form.get('name')
-    return f'Привет, {name}! Форма отправлена.'
-
-
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    app.run()

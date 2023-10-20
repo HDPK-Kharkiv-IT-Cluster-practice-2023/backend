@@ -1,8 +1,8 @@
 import random
 from faker import Faker
-from models.Dice import Dice
-from models.HealthBar import HealthBar
-from models.XpBar import XpBar
+from models import Dice
+from models import HealthBar
+from models import XpBar
 import json
 
 
