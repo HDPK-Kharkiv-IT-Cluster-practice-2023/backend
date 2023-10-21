@@ -23,9 +23,9 @@ class Character:
         self.attack = attack
         self.armor = armor
         self.luck = luck
-        self.balance = balance
+        self.balance = balance if balance is not None else 0
         self.alive = alive
-        self.critical_attack = critical_attack
+        self.critical_attack = critical_attack if critical_attack is not None else 2
         self.playability = playability
         self.health_bar = None
         self.xp_bar = None
