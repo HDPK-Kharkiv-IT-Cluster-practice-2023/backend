@@ -17,9 +17,7 @@ class Mob:
         self.critical_attack = self.attack * 2 if self.luck > 5 else self.attack
 
     def to_dict(self):
-        """
-        Преобразует объект моба в словарь.
-        """
+
         return {
             "name": self.name,
             "critical_attack": self.critical_attack,
@@ -50,7 +48,7 @@ def get_mobs():
 @app.route('/create', methods=['POST'])
 @cross_origin(origin='http://localhost:3000', headers=['Content-Type', 'Authorization'])
 def create_mob():
-    new_mob = generate_mobs(1)[0]  # Создать одного нового моба
+    new_mob = generate_mobs(1)[0] 
     return jsonify(new_mob.to_dict())
 
 
