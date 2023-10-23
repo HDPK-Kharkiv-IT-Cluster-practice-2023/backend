@@ -23,9 +23,9 @@ class Character:
         self.attack = attack
         self.armor = armor
         self.luck = luck
-        self.balance = balance
+        self.balance = balance if balance is not None else 0
         self.alive = alive
-        self.critical_attack = critical_attack
+        self.critical_attack = critical_attack if critical_attack is not None else 2
         self.playability = playability
         self.health_bar = None
         self.xp_bar = None
@@ -120,6 +120,24 @@ class Character:
         self.luck = new_luck
         self.calculate_points_balance()
         self.update_bars()
+
+    def toJSON(self):
+        character_dict = {
+            "id": self.id,
+            "name": self.name,
+            "criticalAttack": self.critical_attack,
+            "health": self.health,
+            "armor": self.armor,
+            "attack": self.attack,
+            "luck": self.luck,
+            "level": self.level,
+            "xp": self.xp,
+            "balance": self.balance,
+            "alive": self.alive,
+            "playability": self.playability,
+            "maxHealth": self.max_health
+        }
+        return json.dumps(character_dict, sort_keys=False, indent=4)
 
     @property
     def health(self):
