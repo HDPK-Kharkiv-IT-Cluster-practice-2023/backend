@@ -27,6 +27,17 @@ character_full_info_model = api.model('Character full info', {
     'stat_points': fields.Integer(readonly=True, description='The Character stat points')
 })
 
+mob_entity_full_info_model = api.model('mob full info', {
+    'name': fields.String(readonly=True, description='The mob name'),
+    'level': fields.Integer(readonly=True, description='The mob level'),
+    'health': fields.Integer(readonly=True, description='The mob current health'),
+    'armor': fields.Integer(readonly=True, description='The mob armor'),
+    'attack': fields.Integer(readonly=True, description='The mob attack'),
+    'luck': fields.Integer(readonly=True, description='The mob luck'),
+    'balance': fields.Integer(readonly=True, description='The mob balance'),
+    'critical_attack': fields.Integer(readonly=True, description='The mob critical attack modifier'),
+})
+
 ns = api.namespace('todos', description='TODO operations')
 
 
@@ -188,6 +199,36 @@ characterDAO.create({
     'stat_points': 0
 })
 
+class MobDAO(object):
+    def __init__(self):
+        self.counter = 0
+        self.mobs = []
+
+    def create(self, data):
+        mob = data
+        mob['id'] = self.counter = self.counter + 1
+        self.mobs.append(mob)
+        return mob
+
+    def get(self, id):
+        for mob in self.mobs:
+            if mob['id'] == id:
+                return mob
+        api.abort(404, "Mob {} doesn't exist".format(id))
+
+    def update(self, id, data):
+        mob = self.get(id)
+        mob.update(data)
+        return mob
+
+    def delete(self, id):
+        mob = self.get(id)
+        self.mobs.remove(mob)
+
+    def get_all_mobs(self):
+        return self.mobs
+
+
 
 @game.route('/api/v1/characters/<string:playability>')
 class CharacterList(Resource):
@@ -210,5 +251,93 @@ class CharacterResource(Resource):
     @game.marshal_with(character_full_info_model)
     def get(self, character_id):
         return characterDAO.get(character_id)
+
+@game.route('/api/v1/character')
+class AddCharacterResource(Resource):
+    @game.doc('create_character')
+    @game.expect(character_full_info_model)
+    @game.marshal_with(character_full_info_model, code=201)
+    def post(self):
+        character_dao = CharacterDAO()
+        return character_dao.create(data=api.payload), 201
+
+    @game.route('/api/v1/character/<int:character_id>')
+    class CharacterUpdateResource(Resource):
+        @game.doc('update_character')
+        @game.expect(character_full_info_model)
+        @game.marshal_with(character_full_info_model)
+        def patch(self, character_id):
+            character = characterDAO.get(character_id)
+            data = api.payload
+            character.update(data)
+            return character
+
+@game.route('/api/v1/mobs')
+class MobListResource(Resource):
+    @game.doc('list_mobs')
+    @game.marshal_list_with(mob_entity_full_info_model)
+    def get(self):
+        mob_dao = MobDAO()
+        mobs = mob_dao.get_all_mobs()
+        return mobs
+
+    @game.route('/api/v1/mob/<int:mob_id>')
+    class MobResource(Resource):
+        @game.doc('mob_by_id')
+        @game.marshal_with(mob_entity_full_info_model)
+        def get(self, mob_id):
+            mob_dao = MobDAO()
+            mob = mob_dao.get(mob_id)
+            return mob
+
+@game.route('/api/v1/mob/<int:character_id>')
+class CreateMobForCharacter(Resource):
+    @game.doc('create_mob_for_character')
+    @game.expect(mob_entity_full_info_model)
+    def post(self, character_id):
+        mob_data = api.payload
+        mob_dao = MobDAO()
+        mob = mob_dao.create(mob_data)
+        mob['character_id'] = character_id
+        return {'mob_id': mob['id']}, 201
+
+@game.route('/api/v1/character/max_stat_points/<int:level>')
+class MaxStatPoints(Resource):
+    @game.doc('max_stat_points')
+    def get(self, level):
+        max_stat_points = level * 10
+        return {'max_stat_points': max_stat_points}
+
+@game.route('/api/v1/character/random/<int:level>/<string:playability>')
+class RandomCharacter(Resource):
+    @game.doc('random_character')
+    @game.marshal_with(character_full_info_model)
+    def get(self, level, playability):
+
+        import random
+
+        random_character = {
+            'id': random.randint(1, 1000),
+            'name': 'Random Character',
+            'level': level,
+            'xp_goal': random.randint(50, 100),
+            'xp': random.randint(0, 50),
+            'max_health': random.randint(50, 100),
+            'health': random.randint(0, 100),
+            'armor': random.randint(0, 10),
+            'attack': random.randint(0, 10),
+            'luck': random.randint(0, 10),
+            'balance': random.randint(0, 100),
+            'alive': True,
+            'critical_attack': random.randint(0, 5),
+            'playability': playability,
+            'stat_points': random.randint(0, 20)
+        }
+
+        return random_character
+
+
+
+
 
 
