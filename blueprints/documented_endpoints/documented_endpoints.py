@@ -333,6 +333,7 @@ class RandomCharacter(Resource):
             'playability': playability,
             'stat_points': random.randint(0, 20)
         }
+
         return random_character
 
 
