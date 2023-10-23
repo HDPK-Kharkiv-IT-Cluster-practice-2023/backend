@@ -27,5 +27,5 @@ def create_database_connection(tunnel):
         password='U6Tdw8ReM',
         host='127.0.0.1',
         port=tunnel.local_bind_port,
-        database='test',
+        database='charactersdb',
     )

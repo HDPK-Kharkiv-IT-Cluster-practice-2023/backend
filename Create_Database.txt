@@ -4,4 +4,26 @@ CREATE TABLE characters (id SERIAL PRIMARY KEY, name VARCHAR(255), critical_atta
 
 CREATE TABLE mob_types ( mob_id serial PRIMARY KEY, mob_name VARCHAR(255) NOT NULL, health INT, armor INT, attack INT, luck INT);
 
+ALTER TABLE characters
+ADD COLUMN level INT,
+ADD COLUMN xp INT,
+ADD COLUMN balance INT,
+ADD COLUMN alive BOOLEAN,
+ADD COLUMN playability BOOLEAN,
+ADD COLUMN max_health INT;
 
+ALTER TABLE mob_types
+ADD COLUMN level INT,
+ADD COLUMN xp INT,
+ADD COLUMN balance INT,
+ADD COLUMN alive BOOLEAN,
+ADD COLUMN max_health INT,
+ADD COLUMN critical_attack INT;
+
+ALTER TABLE mob_types RENAME COLUMN mob_id TO id;
+
+ALTER TABLE characters
+ADD COLUMN stat_points INT;
+
+ALTER TABLE characters
+ADD COLUMN inventory INT;
