@@ -1,96 +1,64 @@
 import json
-from ssh_tunnel import create_database_connection
+import psycopg2
 
 
-class Shop:
-    def __init__(self, initial_money, char_id, tunnel):
-        self.money = initial_money
-        self.character_id = char_id
-        self.inventory = []
+def purchase_item(item_name, item_price, balance, inventory, char_id, db_username, db_password, tunnel,
+                  character_database_name):
+    if balance >= item_price:
+        balance -= item_price
+        inventory.append(item_name)
 
-        self.melee_weapons = {
-            "Sword of Dragons": {'price': 50, 'damage': 10, 'effect': 'poison'}
-        }
+        inventory_json = json.dumps(inventory)
 
-        self.ranged_weapons = {
-            "Blood Eye Bow": {'price': 100, 'damage': 20, 'effect': 'poison'}
-        }
-
-        self.items = {
-            'Iron Armor': {'price': 150, 'armor': 20},
-            'Health Potion': {'price': 30, 'health': 50},
-            'Lucky Amulet': {'price': 50, 'luck': 0.1},
-            'Crit Dagger': {'price': 100, 'critical_damage': 0.5}
-        }
-        self.legendary_items = {
-            'Excalibur': {'price': 1000, 'damage': 100, 'effect': 'holy smite'}
-        }
-
-        self.tunnel = tunnel
-
-        self.initialize_character(char_id)
-        self.load_character_data()
-
-    def initialize_character(self, char_id):
-        with create_database_connection(self.tunnel) as connection:
+        with psycopg2.connect(
+                user=db_username,
+                password=db_password,
+                host='127.0.0.1',
+                port=tunnel.local_bind_port,
+                database=character_database_name,
+        ) as connection:
             cursor = connection.cursor()
-
-            query = 'SELECT COUNT(*) FROM characters WHERE id = %s;'
-            cursor.execute(query, (char_id,))
-            count = cursor.fetchone()[0]
-
-            if count == 0:
-                query = 'INSERT INTO characters (id, balance, inventory) VALUES (%s, %s, %s);'
-                initial_inventory = []
-                cursor.execute(query, (char_id, 0, initial_inventory))
-                connection.commit()
-
-    def load_character_data(self):
-        with create_database_connection(self.tunnel) as connection:
-            cursor = connection.cursor()
-
-            query = 'SELECT balance, inventory FROM characters WHERE id = %s;'
-            cursor.execute(query, (self.character_id,))
-            result = cursor.fetchone()
-
-            if result:
-                self.money = result[0]
-                self.inventory = result[1] if result[1] else []
-            else:
-                self.money = 0
-                self.inventory = []
-
-    def save_character_data(self):
-        with create_database_connection(self.tunnel) as connection:
-            cursor = connection.cursor()
-
-            query = 'UPDATE characters SET balance = %s, inventory = %s WHERE id = %s;'
-            inventory_json = json.dumps(self.inventory)
-            cursor.execute(query, (self.money, inventory_json, self.character_id))
+            query = 'UPDATE characters SET balance = %s, inventory = %s::jsonb WHERE id = %s;'
+            cursor.execute(query, (balance, inventory_json, char_id))
             connection.commit()
 
-    def show_category(self, category_name, items):
-        print(f'Available {category_name}:')
-        for i, (item, details) in enumerate(items.items(), start=1):
-            print(f'{i}. {item}: Price - {details["price"]} UAH, '
-                  f'{", ".join([f"{k}: {v}" for k, v in details.items() if k != "price"])}')
-        print(f'Your balance: {self.money} UAH')
+        return balance, inventory
+    else:
+        return balance, inventory
 
-    def show_weapons(self):
-        self.show_category("weapons", {**self.melee_weapons, **self.ranged_weapons})
 
-    def show_items(self):
-        self.show_category("items", self.items)
+def main(char_id, db_username, db_password, tunnel, character_database_name, balance, inventory, items):
+    print(f"Your balance: {balance} UAH")
 
-    def show_legendary_items(self):
-        self.show_category("legendary items", self.legendary_items)
+    while True:
+        print("List of available items:")
+        for index, (item_name, item_data) in enumerate(items.items(), start=1):
+            category = item_data['category']
+            price = item_data['price']
+            details = item_data['details']
+            print(f"{index}. Name: {item_name}, Category: {category}, Price: {price} UAH, Details: {details}")
 
-    def purchase_item(self, item_name, item_price):
-        if self.money >= item_price:
-            self.inventory.append(item_name)
+        print("0. Exit")
+        choice = input("Enter the item number you want to purchase, or 0 to exit: ")
 
-            self.money -= item_price
-            self.save_character_data()
-            return True
-        else:
-            return False
+        if choice == "0":
+            break
+
+        try:
+            choice = int(choice)
+            if choice < 1 or choice > len(items):
+                raise ValueError
+
+            item_name = list(items.keys())[choice - 1]
+            item_price = items[item_name]['price']
+
+            balance, inventory = purchase_item(item_name, item_price, balance, inventory, char_id, db_username,
+                                               db_password, tunnel, character_database_name)
+            if balance >= 0:
+                print(f'You bought {item_name} for {item_price} UAH. Remaining balance: {balance} UAH')
+            else:
+                print('Failed to buy the item. Insufficient funds.')
+
+        except ValueError:
+            print('Invalid input. Please enter a valid number or 0 to exit.')
+
