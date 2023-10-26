@@ -29,6 +29,7 @@ class Mob:
         if any(getattr(self, attr) is None for attr in ['max_health', 'armor', 'attack', 'luck']):
             points = self.point_spread()
             self.luck = points
+        self.health = self.max_health
         self.health_bar = HealthBar(self)
 
     def point_spread(self):
