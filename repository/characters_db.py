@@ -1,71 +1,15 @@
 import psycopg2
 from psycopg2 import extras
 from psycopg2.errors import InvalidTextRepresentation
-from sshtunnel import SSHTunnelForwarder
+from repository.db_manager import DatabaseManager
 
 
 class CharacterRepository:
     def __init__(self):
-        # self.connection_creds = {
-        #     'name': 'global',
-        #     'host': 'bandydan-3203.postgres.pythonanywhere-services.com',
-        #     'port': 13203,
-        #     'db_username': 'super',
-        #     'db_password': 'U6Tdw8ReM',
-        #     'database_name': 'charactersdb',
-        #     'ssh_host': 'ssh.pythonanywhere.com',
-        #     'ssh_port': 22,
-        #     'ssh_username': 'bandydan',
-        #     'ssh_password': 'xb6W7LHNJ6!cRKi',
-        #     'ssh_private_key_password': 'masterkey',
-        #     'ssh_private_key': '/home/vitaly/.ssh/id_rsa'
-        # }
-
-        # local database
-
-        self.connection_creds = {
-            'name': 'local',
-            'host': 'localhost',
-            'database': 'charactersdb',
-            'user': 'postgres',
-            'password': 'admin'
-        }
-
-    def _create_connection(self, tunnel):
-        if self.connection_creds.get('name') == 'local':
-            return psycopg2.connect(
-                host=self.connection_creds.get('host'),
-                database=self.connection_creds.get('database'),
-                user=self.connection_creds.get('user'),
-                password=self.connection_creds.get('password')
-            )
-        else:
-            return psycopg2.connect(
-                user=self.connection_creds.get('db_username'),
-                password=self.connection_creds.get('db_password'),
-                host='127.0.0.1',
-                port=tunnel.local_bind_port,
-                database=self.connection_creds.get('database_name'),
-            )
-
-    def _create_tunnel(self):
-        if self.connection_creds.get('name') == 'local':
-            return None
-        else:
-            return SSHTunnelForwarder(
-                (self.connection_creds.get('ssh_host'), self.connection_creds.get('ssh_port')),
-                ssh_username=self.connection_creds.get('ssh_username'),
-                ssh_password=self.connection_creds.get('ssh_password'),
-                ssh_private_key=self.connection_creds.get('ssh_private_key'),
-                ssh_private_key_password=self.connection_creds.get('ssh_private_key_password'),
-                remote_bind_address=(self.connection_creds.get('host'), self.connection_creds.get('port'))
-            )
+        self.db_manager = DatabaseManager()
 
     def _create_in_database(self, character):
-        tunnel = self._create_tunnel()
-        if tunnel is not None:
-            tunnel.start()
-        connection = self._create_connection(tunnel)
+        connection = self.db_manager.get_connection()
         cursor = connection.cursor()
         try:
             cursor.execute(
@@ -82,14 +26,9 @@ class CharacterRepository:
         finally:
             cursor.close()
             connection.close()
-            if tunnel is not None:
-                tunnel.stop()
 
     def _update_stats(self, character):
-        tunnel = self._create_tunnel()
-        if tunnel is not None:
-            tunnel.start()
-        connection = self._create_connection(tunnel)
+        connection = self.db_manager.get_connection()
         cursor = connection.cursor()
         try:
             cursor.execute(
@@ -104,14 +43,9 @@ class CharacterRepository:
         finally:
             cursor.close()
             connection.close()
-            if tunnel is not None:
-                tunnel.stop()
 
     def add_character_with_user_id(self, character, user_id):
-        tunnel = self._create_tunnel()
-        if tunnel is not None:
-            tunnel.start()
-        connection = self._create_connection(tunnel)
+        connection = self.db_manager.get_connection()
         cursor = connection.cursor()
         try:
             cursor.execute(
@@ -128,14 +62,9 @@ class CharacterRepository:
         finally:
             cursor.close()
             connection.close()
-            if tunnel is not None:
-                tunnel.stop()
 
     def add_all(self, characters_list):
-        tunnel = self._create_tunnel()
-        if tunnel is not None:
-            tunnel.start()
-        connection = self._create_connection(tunnel)
+        connection = self.db_manager.get_connection()
         cursor = connection.cursor()
         try:
             for character in characters_list:
@@ -153,14 +82,9 @@ class CharacterRepository:
         finally:
             cursor.close()
             connection.close()
-            if tunnel is not None:
-                tunnel.stop()
 
     def exist_by_id(self, character_id):
-        tunnel = self._create_tunnel()
-        if tunnel is not None:
-            tunnel.start()
-        connection = self._create_connection(tunnel)
+        connection = self.db_manager.get_connection()
         cursor = connection.cursor()
         try:
             cursor.execute("SELECT COUNT(*) FROM characters WHERE id = %s", (character_id,))
@@ -169,14 +93,9 @@ class CharacterRepository:
         finally:
             cursor.close()
             connection.close()
-            if tunnel is not None:
-                tunnel.stop()
 
     def find_all(self):
-        tunnel = self._create_tunnel()
-        if tunnel is not None:
-            tunnel.start()
-        connection = self._create_connection(tunnel)
+        connection = self.db_manager.get_connection()
         cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
         try:
             cursor.execute('SELECT * FROM characters')
@@ -185,14 +104,9 @@ class CharacterRepository:
         finally:
             cursor.close()
             connection.close()
-            if tunnel is not None:
-                tunnel.stop()
 
     def find_all_by_playability_and_alive(self, playability, alive=True):
-        tunnel = self._create_tunnel()
-        if tunnel is not None:
-            tunnel.start()
-        connection = self._create_connection(tunnel)
+        connection = self.db_manager.get_connection()
         cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
         try:
             cursor.execute("SELECT * FROM characters "
@@ -204,14 +118,9 @@ class CharacterRepository:
         finally:
             cursor.close()
             connection.close()
-            if tunnel is not None:
-                tunnel.stop()
 
     def find_all_by_playability_and_alive_and_level(self, playability, level, alive=True):
-        tunnel = self._create_tunnel()
-        if tunnel is not None:
-            tunnel.start()
-        connection = self._create_connection(tunnel)
+        connection = self.db_manager.get_connection()
         cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
         try:
             cursor.execute("SELECT * FROM characters "
@@ -223,14 +132,9 @@ class CharacterRepository:
         finally:
             cursor.close()
             connection.close()
-            if tunnel is not None:
-                tunnel.stop()
 
     def find_all_by_user_id_and_alive(self, user_id, alive=True):
-        tunnel = self._create_tunnel()
-        if tunnel is not None:
-            tunnel.start()
-        connection = self._create_connection(tunnel)
+        connection = self.db_manager.get_connection()
         cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
         try:
             cursor.execute("SELECT * FROM characters "
@@ -242,14 +146,9 @@ class CharacterRepository:
         finally:
             cursor.close()
             connection.close()
-            if tunnel is not None:
-                tunnel.stop()
 
     def find_by_id(self, character_id):
-        tunnel = self._create_tunnel()
-        if tunnel is not None:
-            tunnel.start()
-        connection = self._create_connection(tunnel)
+        connection = self.db_manager.get_connection()
         cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
         try:
             cursor.execute("SELECT * FROM characters WHERE id = %s", (character_id,))
@@ -263,8 +162,6 @@ class CharacterRepository:
         finally:
             cursor.close()
             connection.close()
-            if tunnel is not None:
-                tunnel.stop()
 
     def add_character(self, character):
         if character.id is None:
