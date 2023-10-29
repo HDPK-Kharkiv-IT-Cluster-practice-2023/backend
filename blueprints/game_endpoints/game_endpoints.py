@@ -1,12 +1,13 @@
 from flask import Blueprint
 from flask import request, jsonify, make_response, Response
 
-from mappers import *
+from repository.user_db import UserRepository
 from ConsoleGame import *
 
 
 character_repository = CharacterRepository()
 mob_repository = MobRepository()
+user_repository = UserRepository()
 blueprint = Blueprint('game', __name__)
 
 
@@ -166,3 +167,102 @@ def get_random_character(level, playability):
     generated_hero = Character(playability=playability, xp=0, level=level)
     generated_hero = map_character_to_dictionary(generated_hero)
     return jsonify({'generated_hero': generated_hero})
+
+
+@blueprint.route('/api/v1/users')
+def get_users_list():
+    users = user_repository.find_all()
+    return jsonify({'users': users})
+
+
+@blueprint.route('/api/v1/user', methods=['POST'])
+def add_user():
+    user_name = request.args.get('user_name')
+    try:
+        user_id = user_repository.add_user(user_name)
+    except ValueError:
+        return jsonify({'error': f'user name {user_name} already taken'}), 400
+    return jsonify({'user_id': user_id})
+
+
+@blueprint.route('/api/v1/user/id/<int:user_id>')
+def find_user_by_id(user_id):
+    user = user_repository.find_by_id(user_id)
+    if user is None:
+        return jsonify({'error': f"There's no user with an id {user_id}"}), 404
+    return jsonify({'user': user})
+
+
+@blueprint.route('/api/v1/user/name/<user_name>')
+def find_user_by_name(user_name):
+    user = user_repository.find_by_name(user_name)
+    if user is None:
+        return jsonify({'error': f"There's no user with name {user_name}"}), 404
+    return jsonify({'user': user})
+
+
+@blueprint.route('/api/v2/fight/user/<int:user_id>/<int:hero_id>/<int:enemy_id>')
+def fight_v2(hero_id, enemy_id, user_id):
+    hero = character_repository.find_by_id(hero_id)
+    if hero is None:
+        return jsonify({'error': f"There's no hero with an id {hero_id}"}), 404
+    if hero.get("owner_id") != user_id:
+        return jsonify({'error': f"You don't have access to the character"}), 403
+    hero = validate_entity(hero)
+    if isinstance(hero, Response):
+        return hero
+    enemy_type = request.args.get('enemy_type')
+    if enemy_type == 'mob':
+        enemy = mob_repository.find_by_id(enemy_id)
+        if enemy is None:
+            return jsonify({'error': f"There's no enemy with an id {enemy_id}"}), 404
+    elif enemy_type == 'character':
+        enemy = character_repository.find_by_id(enemy_id)
+        if enemy is None:
+            return jsonify({'error': f"There's no enemy with an id {enemy_id}"}), 404
+    else:
+        return jsonify({'error': 'cannot find parameter enemy_type'}), 400
+    enemy = validate_entity(enemy, enemy_type)
+    if isinstance(enemy, Response):
+        return enemy
+    action = request.args.get('action')
+    message = ''
+    if action == 'attack':
+        enemy.take_damage(hero)
+        hero.take_damage(enemy)
+        update_characters_info(hero, enemy, True)
+    elif action == 'escape':
+        if hero.dice.roll_dice() <= hero.luck:
+            message = 'You successfully escaped'
+            update_characters_info(hero, enemy)
+        else:
+            message = 'You couldn\'t escape'
+            enemy_curr_luck = enemy.luck
+            enemy.luck = 100
+            hero.take_damage(enemy)
+            enemy.luck = enemy_curr_luck
+            update_characters_info(hero)
+            update_characters_info(enemy=enemy, update_bars=True)
+    hero = map_character_to_dictionary(hero)
+    enemy = map_mob_to_dictionary(enemy)
+    response = {'hero': hero,
+                'enemy': enemy,
+                'message': message}
+    return jsonify(response)
+
+
+@blueprint.route('/api/v2/characters/<int:user_id>')
+def get_characters_v2(user_id):
+    response = jsonify(character_repository.find_all_by_user_id_and_alive(user_id))
+    response.headers['Content-Type'] = 'application/json'
+    return response
+
+
+@blueprint.route('/api/v2/character', methods=['POST'])
+def create_character_v2():
+    data = request.get_json()
+    character = validate_entity(data)
+    if isinstance(character, Response):
+        return character
+    character_id = character_repository.add_character_with_user_id(character, data.get('owner_id'))
+    return jsonify({'character_id': character_id})
