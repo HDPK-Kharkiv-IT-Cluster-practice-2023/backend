@@ -24,3 +24,14 @@ ALTER TABLE mob_types RENAME COLUMN mob_id TO id;
 
 ALTER TABLE characters
 ADD COLUMN stat_points INT;
+
+ALTER TABLE characters
+ADD COLUMN inventory INT;
+
+ALTER TABLE characters
+ADD COLUMN owner_id INT,
+ADD CONSTRAINT fk_owner
+  FOREIGN KEY (owner_id)
+  REFERENCES users(id);
+
+CREATE TABLE users (id SERIAL PRIMARY KEY, name VARCHAR(255));

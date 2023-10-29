@@ -4,7 +4,7 @@ from sshtunnel import SSHTunnelForwarder
 from psycopg2.errors import InvalidTextRepresentation
 
 
-class MobRepository:
+class UserRepository:
     def __init__(self):
         # self.connection_creds = {
         #     'name': 'global',
@@ -61,7 +61,7 @@ class MobRepository:
                 remote_bind_address=(self.connection_creds.get('host'), self.connection_creds.get('port'))
             )
 
-    def _create_in_database(self, character):
+    def _create_in_database(self, name):
         tunnel = self._create_tunnel()
         if tunnel is not None:
             tunnel.start()
@@ -69,11 +69,9 @@ class MobRepository:
         cursor = connection.cursor()
         try:
             cursor.execute(
-                "INSERT INTO mob_types (mob_name, level, xp, max_health, health, armor, attack, luck, balance, alive, "
-                "critical_attack)"
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
-                (character.name, character.level, character.xp, character.max_health, character.health, character.armor,
-                 character.attack, character.luck, character.balance, character.alive, character.critical_attack)
+                "INSERT INTO users (name)"
+                "VALUES (%s) RETURNING id",
+                (name,)
             )
             new_id = cursor.fetchone()[0]
             connection.commit()
@@ -84,7 +82,7 @@ class MobRepository:
             if tunnel is not None:
                 tunnel.stop()
 
-    def _update_stats(self, character):
+    def _update_stats(self, user_id, name):
         tunnel = self._create_tunnel()
         if tunnel is not None:
             tunnel.start()
@@ -92,11 +90,8 @@ class MobRepository:
         cursor = connection.cursor()
         try:
             cursor.execute(
-                "UPDATE mob_types SET mob_name = %s, level = %s, xp = %s, max_health = %s, health = %s , armor = %s, "
-                "attack = %s, luck = %s, balance = %s, alive = %s, critical_attack = %s WHERE id = %s",
-                (character.name, character.level, character.xp, character.max_health, character.health, character.armor,
-                 character.attack, character.luck, character.balance, character.alive, character.critical_attack,
-                 character.id)
+                "UPDATE users SET name = %s WHERE id = %s",
+                (name, user_id)
             )
             connection.commit()
         finally:
@@ -105,38 +100,14 @@ class MobRepository:
             if tunnel is not None:
                 tunnel.stop()
 
-    def add_all(self, characters_list):
+    def exist_by_id(self, user_id):
         tunnel = self._create_tunnel()
         if tunnel is not None:
             tunnel.start()
         connection = self._create_connection(tunnel)
         cursor = connection.cursor()
         try:
-            for character in characters_list:
-                cursor.execute(
-                    "INSERT INTO mob_types (mob_name, level, xp, max_health, health, armor, attack, luck, balance, alive, "
-                    "critical_attack)"
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
-                    (character.name, character.level, character.xp, character.max_health, character.health, character.armor,
-                     character.attack, character.luck, character.balance, character.alive, character.critical_attack)
-                )
-                new_id = cursor.fetchone()[0]
-                character.id = new_id
-            connection.commit()
-        finally:
-            cursor.close()
-            connection.close()
-            if tunnel is not None:
-                tunnel.stop()
-
-    def exist_by_id(self, character_id):
-        tunnel = self._create_tunnel()
-        if tunnel is not None:
-            tunnel.start()
-        connection = self._create_connection(tunnel)
-        cursor = connection.cursor()
-        try:
-            cursor.execute("SELECT COUNT(*) FROM mob_types WHERE id = %s", (character_id,))
+            cursor.execute("SELECT COUNT(*) FROM users WHERE id = %s", (user_id,))
             count = cursor.fetchone()[0]
             return count > 0
         finally:
@@ -152,24 +123,7 @@ class MobRepository:
         connection = self._create_connection(tunnel)
         cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
         try:
-            cursor.execute("SELECT * FROM mob_types")
-            records = cursor.fetchall()
-            return records
-        finally:
-            cursor.close()
-            connection.close()
-            if tunnel is not None:
-                tunnel.stop()
-
-    def find_all_by_alive(self, alive=True):
-        tunnel = self._create_tunnel()
-        if tunnel is not None:
-            tunnel.start()
-        connection = self._create_connection(tunnel)
-        cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        try:
-            cursor.execute("SELECT * FROM mob_types "
-                           "WHERE alive = %s ", (alive,))
+            cursor.execute("SELECT * FROM users")
             records = cursor.fetchall()
             records_dict = [dict(record) for record in records]
             return records_dict
@@ -179,32 +133,14 @@ class MobRepository:
             if tunnel is not None:
                 tunnel.stop()
 
-    def find_all_by_alive_and_level(self, level, alive=True):
+    def find_by_id(self, user_id):
         tunnel = self._create_tunnel()
         if tunnel is not None:
             tunnel.start()
         connection = self._create_connection(tunnel)
         cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
         try:
-            cursor.execute("SELECT * FROM mob_types "
-                           "WHERE level = %s "
-                           "AND alive = %s", (level, alive))
-            records = cursor.fetchall()
-            return records
-        finally:
-            cursor.close()
-            connection.close()
-            if tunnel is not None:
-                tunnel.stop()
-
-    def find_by_id(self, character_id):
-        tunnel = self._create_tunnel()
-        if tunnel is not None:
-            tunnel.start()
-        connection = self._create_connection(tunnel)
-        cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        try:
-            cursor.execute("SELECT * FROM mob_types WHERE id = %s", (character_id,))
+            cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
             record = cursor.fetchone()
             if record is None:
                 return None
@@ -218,35 +154,37 @@ class MobRepository:
             if tunnel is not None:
                 tunnel.stop()
 
-    def add_mob(self, character):
-        if character.id is None:
-            new_id = self._create_in_database(character)
-            character.id = new_id
+    def find_by_name(self, name):
+        tunnel = self._create_tunnel()
+        if tunnel is not None:
+            tunnel.start()
+        connection = self._create_connection(tunnel)
+        cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        try:
+            cursor.execute("SELECT * FROM users WHERE name = %s", (name,))
+            record = cursor.fetchone()
+            if record is None:
+                return None
+            records_dict = dict(record)
+            return records_dict
+        except InvalidTextRepresentation:
+            return None
+        finally:
+            cursor.close()
+            connection.close()
+            if tunnel is not None:
+                tunnel.stop()
+
+    def add_user(self, name):
+        if self.find_by_name(name) is None:
+            new_id = self._create_in_database(name)
             return new_id
         else:
-            return False
+            raise ValueError
 
-    def update_mob(self, character):
-        if self.exist_by_id(character.id):
-            self._update_stats(character)
+    def update_mob(self, user_id, name):
+        if self.exist_by_id(user_id):
+            self._update_stats(user_id, name)
             return True
         else:
             return False
-
-#     def __str__(self):
-#         return f"{self.name}: критическая атака {self.critical_attack}, здоровье {self.health}, броня {self.armor}
-#         , " \f"атака {self.attack}, удача {self.luck}"
-#
-#
-# def generate_mobs(num_mobs):
-#     mob_list = []
-#     mob_names = ["Zombie", "Skeleton", "Spider", "Slime", "Goblin"]
-#     for i in range(num_mobs):
-#         name = random.choice(mob_names)
-#         mob_list.append(Mob(name))
-#     return mob_list
-#
-#
-# mobs = generate_mobs(10)
-# for mob in mobs:
-#     print(mob)

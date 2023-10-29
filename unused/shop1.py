@@ -3,7 +3,7 @@ from ssh_tunnel import create_ssh_tunnel
 
 
 def main():
-    char_id = 2  # Replace with the desired character ID
+    char_id = 6  # Replace with the desired character ID
 
     tunnel = create_ssh_tunnel()
     tunnel.start()
