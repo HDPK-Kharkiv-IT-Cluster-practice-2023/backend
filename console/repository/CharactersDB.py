@@ -107,6 +107,30 @@ class CharacterRepository:
             if tunnel is not None:
                 tunnel.stop()
 
+    def add_character_with_user_id(self, character, user_id):
+        tunnel = self._create_tunnel()
+        if tunnel is not None:
+            tunnel.start()
+        connection = self._create_connection(tunnel)
+        cursor = connection.cursor()
+        try:
+            cursor.execute(
+                "INSERT INTO characters (name, level, xp, max_health, health, armor, attack, luck, balance, alive, "
+                "critical_attack, playability, stat_points, owner_id)"
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+                (character.name, character.level, character.xp, character.max_health, character.health, character.armor,
+                 character.attack, character.luck, character.balance, character.alive, character.critical_attack,
+                 character.playability, character.stat_points, user_id)
+            )
+            new_id = cursor.fetchone()[0]
+            connection.commit()
+            return new_id
+        finally:
+            cursor.close()
+            connection.close()
+            if tunnel is not None:
+                tunnel.stop()
+
     def add_all(self, characters_list):
         tunnel = self._create_tunnel()
         if tunnel is not None:
@@ -196,6 +220,25 @@ class CharacterRepository:
                            "AND alive = %s", (level, level, playability, alive))
             records = cursor.fetchall()
             return records
+        finally:
+            cursor.close()
+            connection.close()
+            if tunnel is not None:
+                tunnel.stop()
+
+    def find_all_by_user_id_and_alive(self, user_id, alive=True):
+        tunnel = self._create_tunnel()
+        if tunnel is not None:
+            tunnel.start()
+        connection = self._create_connection(tunnel)
+        cursor = connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        try:
+            cursor.execute("SELECT * FROM characters "
+                           "WHERE owner_id = %s "
+                           "AND alive = %s ", (user_id, alive))
+            records = cursor.fetchall()
+            records_dict = [dict(record) for record in records]
+            return records_dict
         finally:
             cursor.close()
             connection.close()

@@ -1,6 +1,8 @@
 import random
+from faker import Faker
 from models.Dice import Dice
 from models.HealthBar import HealthBar
+from models.XpBar import XpBar
 
 
 class Mob:
