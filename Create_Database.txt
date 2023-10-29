@@ -24,3 +24,6 @@ ALTER TABLE mob_types RENAME COLUMN mob_id TO id;
 
 ALTER TABLE characters
 ADD COLUMN stat_points INT;
+
+ALTER TABLE characters
+ADD COLUMN inventory INT;

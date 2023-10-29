@@ -39,7 +39,7 @@ class Character:
             raise OverflowError
         else:
             self.stat_points = points
-            
+
     def init_stats(self):
         if any(getattr(self, attr) is None for attr in ['max_health', 'armor', 'attack', 'luck']):
             points = self.point_spread()
@@ -187,6 +187,3 @@ class Character:
                 f'Crit: {self.critical_attack}, '
                 f'Balance: {self.balance}'
                 f'{points}\n')
-
-# character1 = CharacterRepository()
-# character2 = CharacterRepository()
