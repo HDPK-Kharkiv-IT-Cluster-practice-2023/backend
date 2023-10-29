@@ -1,10 +1,10 @@
 import random
 import sys
 
-from console.characterCreation import Character
-from console.Mob_Generation_fix import Mob
-from console.repository.CharactersDB import CharacterRepository
-from console.repository.MobbDB import MobRepository
+from characterCreation import Character
+from Mob_Generation_fix import Mob
+from repository.CharactersDB import CharacterRepository
+from repository.MobbDB import MobRepository
 
 character_repository = CharacterRepository()
 mob_repository = MobRepository()
