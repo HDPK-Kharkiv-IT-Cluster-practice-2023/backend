@@ -1,10 +1,9 @@
 import random
 import sys
 
-from console.characterCreation import Character
-from console.Mob_Generation_fix import Mob
-from console.repository.CharactersDB import CharacterRepository
-from console.repository.MobbDB import MobRepository
+from repository.characters_db import CharacterRepository
+from repository.mobb_db import MobRepository
+from mappers import *
 
 character_repository = CharacterRepository()
 mob_repository = MobRepository()
@@ -96,22 +95,6 @@ def generate_character_chooser(characters_list):
         i += 1
     request += f'[{i}] - Generate new character\n'
     return request
-
-
-def map_dictionary_to_character(character):
-    return Character(id=character.get('id'), name=character.get("name"), level=character.get("level"),
-                     xp=character.get("xp"), max_health=character.get("max_health"), health=character.get("health"),
-                     armor=character.get("armor"), attack=character.get("attack"), luck=character.get("luck"),
-                     balance=character.get("balance"), alive=character.get("alive"),
-                     critical_attack=character.get("critical_attack"), playability=character.get("playability"))
-
-
-def map_dictionary_to_mob(character):
-    return Mob(id=character.get('id'), name=character.get("mob_name"), level=character.get("level"),
-               xp=character.get("xp"), max_health=character.get("max_health"), health=character.get("health"),
-               armor=character.get("armor"), attack=character.get("attack"), luck=character.get("luck"),
-               balance=character.get("balance"), alive=character.get("alive"),
-               critical_attack=character.get("critical_attack"))
 
 
 def select_hero():
